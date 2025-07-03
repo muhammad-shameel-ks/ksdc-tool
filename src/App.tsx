@@ -1,4 +1,3 @@
-import React from "react";
 import { EMICalculator } from "./components/EMICalculator";
 import { GSTCalculator } from "./components/GSTCalculator";
 
