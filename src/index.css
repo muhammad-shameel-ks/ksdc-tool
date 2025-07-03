@@ -1,0 +1,60 @@
+@import "tailwindcss";
+@import "react-day-picker/dist/style.css";
+
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #0f172a;
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f172a;
+  --color-primary: #3b82f6;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f1f5f9;
+  --color-secondary-foreground: #0f172a;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-accent: #f1f5f9;
+  --color-accent-foreground: #0f172a;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #e2e8f0;
+  --color-input: #e2e8f0;
+  --color-ring: #3b82f6;
+  --radius: 0.5rem;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+}
+
+/* Override react-day-picker styles to match our design */
+.rdp {
+  --rdp-cell-size: 36px;
+  --rdp-accent-color: #3b82f6;
+  --rdp-background-color: #ffffff;
+  --rdp-accent-color-dark: #2563eb;
+  --rdp-background-color-dark: #1f2937;
+  --rdp-outline: 2px solid var(--rdp-accent-color);
+  --rdp-outline-selected: 2px solid rgba(0, 0, 0, 0.75);
+}
+
+.rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
+  background-color: #f3f4f6;
+}
+
+.rdp-day_selected {
+  background-color: #3b82f6 !important;
+  color: white !important;
+}
+
+.rdp-day_selected:hover {
+  background-color: #2563eb !important;
+}
+
+.rdp-day_today:not(.rdp-day_selected) {
+  background-color: #f3f4f6;
+  font-weight: 600;
+}
