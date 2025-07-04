@@ -126,6 +126,17 @@ const TransactionGenerator: React.FC = () => {
     });
   };
 
+  const resetForm = () => {
+    setLoanNo('');
+    setName('');
+    setOfficeId('');
+    setRows([
+      { vchr_TransNo: '', int_Rec: '', transactionDate: null as Date | null, transactionDateText: '', dateError: '' },
+      { vchr_TransNo: '', int_Rec: '', transactionDate: null as Date | null, transactionDateText: '', dateError: '' },
+      { vchr_TransNo: '', int_Rec: '', transactionDate: null as Date | null, transactionDateText: '', dateError: '' },
+    ]);
+  };
+
   const headers = [
     "vchr_TransNo", "chr_Trans_Type", "int_Code", "chr_Acc_Name", "chr_Type", "int_Rec", "int_Pay",
     "dt_TDate", "int_loanno", "chr_Name", "vchr_remarks", "vchr_offid", "vchr_uname", "dte_time",
@@ -225,7 +236,10 @@ const TransactionGenerator: React.FC = () => {
             </table>
           </div>
           <div className="mt-4">
-            <Button onClick={handleCopyAll}>Copy All</Button>
+            <div className="flex gap-4">
+              <Button onClick={handleCopyAll} className="flex-1">Copy All</Button>
+              <Button onClick={resetForm} variant="outline" className="flex-1">Reset</Button>
+            </div>
           </div>
         </div>
       </CardContent>

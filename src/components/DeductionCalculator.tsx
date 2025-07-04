@@ -60,6 +60,13 @@ const DeductionCalculator: React.FC = () => {
     }, 2000);
   };
 
+  const resetForm = () => {
+    setLoanAppId('');
+    setProFee('');
+    setLegalFee('');
+    setBc('');
+  };
+
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
@@ -93,7 +100,10 @@ const DeductionCalculator: React.FC = () => {
             <Label htmlFor="total" className="text-lg font-semibold">Total Deduction</Label>
             <Input id="total" type="number" value={total} readOnly className="mt-2 font-bold text-3xl text-center bg-white" />
           </div>
-          <Button onClick={handleCopy} className="w-full">{isCopied ? 'Copied!' : 'Copy for Excel'}</Button>
+          <div className="flex gap-4">
+            <Button onClick={handleCopy} className="flex-1">{isCopied ? 'Copied!' : 'Copy for Excel'}</Button>
+            <Button onClick={resetForm} variant="outline" className="flex-1">Reset</Button>
+          </div>
           <div className="flex flex-col items-center pt-6">
             <Label className="text-xl font-bold mb-4 block">Row Preview</Label>
             <div className="border border-slate-200 dark:border-slate-700 rounded-lg inline-block">
