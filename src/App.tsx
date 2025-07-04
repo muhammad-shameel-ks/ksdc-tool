@@ -1,5 +1,6 @@
 import { EMICalculator } from "./components/EMICalculator";
 import { GSTCalculator } from "./components/GSTCalculator";
+import DeductionCalculator from "./components/DeductionCalculator";
 
 function App() {
   return (
@@ -10,7 +11,7 @@ function App() {
             Financial Calculators
           </h1>
           <p className="text-lg text-muted-foreground">
-            Professional EMI and GST calculation tools
+            Professional EMI, GST and Deduction calculation tools
           </p>
         </div>
 
@@ -21,6 +22,10 @@ function App() {
           <div className="flex justify-center">
             <GSTCalculator />
           </div>
+        </div>
+
+        <div className="mt-8 flex justify-center">
+          <DeductionCalculator />
         </div>
 
         <footer className="mt-16 text-center text-sm text-muted-foreground">
