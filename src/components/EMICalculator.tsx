@@ -310,7 +310,7 @@ export function EMICalculator() {
         setResult(null);
       }
     }
-  }, [fromDateText, toDateText, loanDurationMonths, loanAmount, interestRate, errors]);
+  }, [fromDateText, toDateText, loanDurationMonths, loanAmount, interestRate]);
 
   return (
     <Card className="w-full max-w-2xl">

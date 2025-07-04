@@ -142,11 +142,9 @@ const TransactionGenerator: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Common Information</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 space-y-4">
+          <h3 className="font-medium text-blue-800 mb-2">Common Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="loanNo">Loan Number</Label>
               <Input id="loanNo" value={loanNo} onChange={(e) => setLoanNo(e.target.value)} />
@@ -159,38 +157,42 @@ const TransactionGenerator: React.FC = () => {
               <Label htmlFor="officeId">Office ID</Label>
               <Input id="officeId" value={officeId} onChange={(e) => setOfficeId(e.target.value)} />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {rows.map((row, index) => (
-            <Card key={index}>
-              <CardHeader>
-                <CardTitle>Transaction {index + 1}: {hardcodedData[index].chr_Acc_Name}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor={`transNo-${index}`}>Transaction No.</Label>
-                  <Input id={`transNo-${index}`} value={row.vchr_TransNo} onChange={(e) => handleRowChange(index, 'vchr_TransNo', e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor={`amount-${index}`}>Received Amount</Label>
-                  <Input id={`amount-${index}`} type="number" value={row.int_Rec} onChange={(e) => handleRowChange(index, 'int_Rec', e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor={`transactionDate-${index}`}>Transaction Date</Label>
-                  <Input
-                    id={`transactionDate-${index}`}
-                    type="text"
-                    placeholder="e.g., 21-10-2025"
-                    value={row.transactionDateText}
-                    onChange={(e) => handleRowChange(index, 'transactionDateText', e.target.value)}
-                    className={row.dateError ? "border-red-500" : ""}
-                  />
-                  {row.dateError && <p className="text-sm text-red-600">{row.dateError}</p>}
-                </div>
-              </CardContent>
-            </Card>
+            <div key={index} className={`p-4 rounded-lg border space-y-4 ${
+              index === 0 ? 'bg-green-50 border-green-200' :
+              index === 1 ? 'bg-orange-50 border-orange-200' :
+              'bg-purple-50 border-purple-200'
+            }`}>
+              <h3 className={`font-medium mb-2 ${
+                index === 0 ? 'text-green-800' :
+                index === 1 ? 'text-orange-800' :
+                'text-purple-800'
+              }`}>Transaction {index + 1}: {hardcodedData[index].chr_Acc_Name}</h3>
+              <div className="space-y-2">
+                <Label htmlFor={`transNo-${index}`}>Transaction No.</Label>
+                <Input id={`transNo-${index}`} value={row.vchr_TransNo} onChange={(e) => handleRowChange(index, 'vchr_TransNo', e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor={`amount-${index}`}>Received Amount</Label>
+                <Input id={`amount-${index}`} type="number" value={row.int_Rec} onChange={(e) => handleRowChange(index, 'int_Rec', e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor={`transactionDate-${index}`}>Transaction Date</Label>
+                <Input
+                  id={`transactionDate-${index}`}
+                  type="text"
+                  placeholder="e.g., 21-10-2025"
+                  value={row.transactionDateText}
+                  onChange={(e) => handleRowChange(index, 'transactionDateText', e.target.value)}
+                  className={row.dateError ? "border-red-500" : ""}
+                />
+                {row.dateError && <p className="text-sm text-red-600">{row.dateError}</p>}
+              </div>
+            </div>
           ))}
         </div>
 

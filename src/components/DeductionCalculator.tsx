@@ -61,37 +61,40 @@ const DeductionCalculator: React.FC = () => {
   };
 
   return (
-    <Card className="w-full border-0 shadow-none">
-      <CardHeader className="px-0">
-        <CardTitle>Deduction Quick-Copy</CardTitle>
+    <Card className="w-full max-w-4xl mx-auto">
+      <CardHeader>
+        <CardTitle className="text-2xl font-bold text-center">Deduction Quick-Copy</CardTitle>
       </CardHeader>
-      <CardContent className="px-0">
-        <div className="space-y-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="grid gap-2">
-              <Label htmlFor="loanAppId">Loan Application ID</Label>
-              <Input id="loanAppId" type="number" value={loanAppId} onChange={(e) => setLoanAppId(e.target.value)} />
+      <CardContent>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="loanAppId">Loan Application ID</Label>
+                <Input id="loanAppId" type="number" value={loanAppId} onChange={(e) => setLoanAppId(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="proFee">Processing Fee</Label>
+                <Input id="proFee" type="number" value={proFee} onChange={(e) => setProFee(e.target.value)} />
+              </div>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="proFee">Processing Fee</Label>
-              <Input id="proFee" type="number" value={proFee} onChange={(e) => setProFee(e.target.value)} />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="legalFee">Legal Fee</Label>
-              <Input id="legalFee" type="number" value={legalFee} onChange={(e) => setLegalFee(e.target.value)} />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="bc">Beneficiary Charges</Label>
-              <Input id="bc" type="number" value={bc} onChange={(e) => setBc(e.target.value)} />
-            </div>
-            <div className="grid gap-2 sm:col-span-2">
-              <Label htmlFor="total">Total Deduction</Label>
-              <Input id="total" type="number" value={total} readOnly className="font-bold text-2xl" />
+            <div className="bg-green-50 p-4 rounded-lg border border-green-200 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="legalFee">Legal Fee</Label>
+                <Input id="legalFee" type="number" value={legalFee} onChange={(e) => setLegalFee(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bc">Beneficiary Charges</Label>
+                <Input id="bc" type="number" value={bc} onChange={(e) => setBc(e.target.value)} />
+              </div>
             </div>
           </div>
-          <Button onClick={handleCopy} className="w-full sm:w-auto">{isCopied ? 'Copied!' : 'Copy for Excel'}</Button>
-          
-          <div className="flex flex-col items-center">
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <Label htmlFor="total" className="text-lg font-semibold">Total Deduction</Label>
+            <Input id="total" type="number" value={total} readOnly className="mt-2 font-bold text-3xl text-center bg-white" />
+          </div>
+          <Button onClick={handleCopy} className="w-full">{isCopied ? 'Copied!' : 'Copy for Excel'}</Button>
+          <div className="flex flex-col items-center pt-6">
             <Label className="text-xl font-bold mb-4 block">Row Preview</Label>
             <div className="border border-slate-200 dark:border-slate-700 rounded-lg inline-block">
               <table className="text-sm text-left">
