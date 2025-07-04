@@ -1,6 +1,12 @@
 import { EMICalculator } from "./components/EMICalculator";
 import { GSTCalculator } from "./components/GSTCalculator";
 import DeductionCalculator from "./components/DeductionCalculator";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 function App() {
   return (
@@ -15,18 +21,28 @@ function App() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 max-w-7xl mx-auto">
-          <div className="flex justify-center">
-            <EMICalculator />
-          </div>
-          <div className="flex justify-center">
-            <GSTCalculator />
-          </div>
-        </div>
-
-        <div className="mt-8 flex justify-center">
-          <DeductionCalculator />
-        </div>
+        <Tabs defaultValue="emi" className="w-full max-w-4xl mx-auto">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="emi">EMI Calculator</TabsTrigger>
+            <TabsTrigger value="gst">GST Calculator</TabsTrigger>
+            <TabsTrigger value="deduction">Deduction Calculator</TabsTrigger>
+          </TabsList>
+          <TabsContent value="emi">
+            <div className="flex justify-center mt-8">
+              <EMICalculator />
+            </div>
+          </TabsContent>
+          <TabsContent value="gst">
+            <div className="flex justify-center mt-8">
+              <GSTCalculator />
+            </div>
+          </TabsContent>
+          <TabsContent value="deduction">
+            <div className="flex justify-center mt-8">
+              <DeductionCalculator />
+            </div>
+          </TabsContent>
+        </Tabs>
 
         <footer className="mt-16 text-center text-sm text-muted-foreground">
           <p>Built with React, TypeScript, and shadcn/ui</p>

@@ -11,7 +11,13 @@ const DeductionCalculator: React.FC = () => {
   const [bc, setBc] = useState('');
   const [total, setTotal] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
-  const [preview, setPreview] = useState('');
+  const [preview, setPreview] = useState<(string | number)[]>([]);
+
+  const headers = [
+    "int_remitid", "int_loanappid", "int_profee", "int_ldrf", "int_legalfee",
+    "int_landverfee", "int_postageamt", "vchr_postrem", "int_othersamt",
+    "vchr_otherrem", "int_bc", "int_total"
+  ];
 
   useEffect(() => {
     const proFeeNum = parseFloat(proFee) || 0;
@@ -19,27 +25,35 @@ const DeductionCalculator: React.FC = () => {
     const bcNum = parseFloat(bc) || 0;
     const totalDeduction = proFeeNum + legalFeeNum + bcNum;
     setTotal(totalDeduction);
-  }, [proFee, legalFee, bc]);
 
-  const handleCopy = () => {
     const rowData = [
       0, // int_remitid
-      loanAppId || 0,
-      proFee || 0,
+      loanAppId,
+      proFee,
       0, // int_ldrf
-      legalFee || 0,
+      legalFee,
       0, // int_landverfee
       0, // int_postageamt
-      0, // vchr_postrem
+      '', // vchr_postrem
       0, // int_othersamt
-      0, // vchr_otherrem
-      bc || 0,
-      total,
+      '', // vchr_otherrem
+      bc,
+      totalDeduction,
     ];
+    setPreview(rowData);
+  }, [proFee, legalFee, bc, loanAppId]);
 
-    const tsvData = rowData.join('\t');
+  const handleCopy = () => {
+    const tsvData = preview
+      .map((cell, index) => {
+        const header = headers[index];
+        if (header.startsWith('int_') && cell === '') {
+          return 0;
+        }
+        return cell;
+      })
+      .join('\t');
     navigator.clipboard.writeText(tsvData);
-    setPreview(tsvData);
     setIsCopied(true);
     setTimeout(() => {
       setIsCopied(false);
@@ -47,39 +61,61 @@ const DeductionCalculator: React.FC = () => {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
+    <Card className="w-full border-0 shadow-none">
+      <CardHeader className="px-0">
         <CardTitle>Deduction Quick-Copy</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="loanAppId">Loan Application ID</Label>
-            <Input id="loanAppId" type="number" value={loanAppId} onChange={(e) => setLoanAppId(e.target.value)} />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="proFee">Processing Fee</Label>
-            <Input id="proFee" type="number" value={proFee} onChange={(e) => setProFee(e.target.value)} />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="legalFee">Legal Fee</Label>
-            <Input id="legalFee" type="number" value={legalFee} onChange={(e) => setLegalFee(e.target.value)} />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="bc">Bank Charges</Label>
-            <Input id="bc" type="number" value={bc} onChange={(e) => setBc(e.target.value)} />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="total">Total Deduction</Label>
-            <Input id="total" type="number" value={total} readOnly />
-          </div>
-          <Button onClick={handleCopy}>{isCopied ? 'Copied!' : 'Copy for Excel'}</Button>
-          {preview && (
-            <div className="mt-4 p-2 bg-gray-100 rounded dark:bg-gray-800">
-              <Label>Row Preview:</Label>
-              <pre className="text-sm whitespace-pre-wrap break-all">{preview}</pre>
+      <CardContent className="px-0">
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid gap-2">
+              <Label htmlFor="loanAppId">Loan Application ID</Label>
+              <Input id="loanAppId" type="number" value={loanAppId} onChange={(e) => setLoanAppId(e.target.value)} />
             </div>
-          )}
+            <div className="grid gap-2">
+              <Label htmlFor="proFee">Processing Fee</Label>
+              <Input id="proFee" type="number" value={proFee} onChange={(e) => setProFee(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="legalFee">Legal Fee</Label>
+              <Input id="legalFee" type="number" value={legalFee} onChange={(e) => setLegalFee(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="bc">Bank Charges</Label>
+              <Input id="bc" type="number" value={bc} onChange={(e) => setBc(e.target.value)} />
+            </div>
+            <div className="grid gap-2 sm:col-span-2">
+              <Label htmlFor="total">Total Deduction</Label>
+              <Input id="total" type="number" value={total} readOnly className="font-bold text-2xl" />
+            </div>
+          </div>
+          <Button onClick={handleCopy} className="w-full sm:w-auto">{isCopied ? 'Copied!' : 'Copy for Excel'}</Button>
+          
+          <div>
+            <Label className="text-xl font-bold mb-4 block">Row Preview</Label>
+            <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-x-auto">
+              <table className="min-w-full text-sm text-left">
+                <thead className="bg-slate-100 dark:bg-slate-800">
+                  <tr>
+                    {headers.map((header) => (
+                      <th key={header} className="p-4 font-semibold text-slate-700 dark:text-slate-200">
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-t border-slate-200 dark:border-slate-700">
+                    {preview.map((cell, index) => (
+                      <td key={index} className="p-4 text-gray-800 font-bold">
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
