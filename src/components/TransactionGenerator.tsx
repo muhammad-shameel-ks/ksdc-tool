@@ -11,23 +11,32 @@ const TransactionGenerator: React.FC = () => {
   const [loanNo, setLoanNo] = useState('');
   const [name, setName] = useState('');
   const [officeId, setOfficeId] = useState('');
-  const [transactionDate, setTransactionDate] = useState<Date | null>(null);
-  const [transactionDateText, setTransactionDateText] = useState('');
-  const [dateError, setDateError] = useState('');
-
   // Row-specific fields
   const [rows, setRows] = useState([
-    { vchr_TransNo: '', int_Rec: '' },
-    { vchr_TransNo: '', int_Rec: '' },
-    { vchr_TransNo: '', int_Rec: '' },
+    { vchr_TransNo: '', int_Rec: '', transactionDate: null as Date | null, transactionDateText: '', dateError: '' },
+    { vchr_TransNo: '', int_Rec: '', transactionDate: null as Date | null, transactionDateText: '', dateError: '' },
+    { vchr_TransNo: '', int_Rec: '', transactionDate: null as Date | null, transactionDateText: '', dateError: '' },
   ]);
 
   // Generated data for preview
   const [previewData, setPreviewData] = useState<any[]>([]);
+  const [showCopyPopup, setShowCopyPopup] = useState(false);
 
-  const handleRowChange = (index: number, field: string, value: string) => {
+  const handleRowChange = (index: number, field: string, value: any) => {
     const newRows = [...rows];
-    newRows[index] = { ...newRows[index], [field]: value };
+    const row = newRows[index];
+    (row as any)[field] = value;
+
+    if (field === 'transactionDateText') {
+      const parsedDate = parseSmartDate(value);
+      if (value && !parsedDate) {
+        row.dateError = 'Invalid date format. Try dd-mm-yyyy';
+      } else {
+        row.dateError = '';
+      }
+      row.transactionDate = parsedDate;
+    }
+
     setRows(newRows);
   };
 
@@ -62,20 +71,20 @@ const TransactionGenerator: React.FC = () => {
   ];
 
   useEffect(() => {
-    const parsedDate = parseSmartDate(transactionDateText);
-    if (transactionDateText && !parsedDate) {
-        setDateError('Invalid date format. Try dd-mm-yyyy');
-    } else {
-        setDateError('');
-    }
-    setTransactionDate(parsedDate);
-  }, [transactionDateText]);
-
-  useEffect(() => {
     const generatedData = rows.map((row, index) => {
-      const receivedAmount = parseFloat(row.int_Rec) || 0;
-      const gstAmount = index === 1 ? receivedAmount * 0.18 : 0;
-      const formattedDate = transactionDate ? transactionDate.toISOString().split('T')[0] + ' 00:00:00.000' : '1900-01-01 00:00:00.000';
+      const total = parseFloat(row.int_Rec) || 0;
+      let gstAmount = 0;
+      let processingFee = total;
+
+      if (index === 1) { // PROCESSING FEE row
+        // Reverse GST calculation: Amount is GST-inclusive
+        processingFee = (total * 100) / 118;
+        gstAmount = total - processingFee;
+      }
+      const date = row.transactionDate;
+      const formattedDate = date
+        ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} 00:00:00.000`
+        : '1900-01-01 00:00:00.000';
 
       return {
         vchr_TransNo: row.vchr_TransNo,
@@ -83,7 +92,7 @@ const TransactionGenerator: React.FC = () => {
         int_Code: hardcodedData[index].int_Code,
         chr_Acc_Name: hardcodedData[index].chr_Acc_Name,
         chr_Type: hardcodedData[index].chr_Type,
-        int_Rec: receivedAmount.toFixed(2),
+        int_Rec: index === 1 ? processingFee.toFixed(2) : total.toFixed(2),
         int_Pay: '0.00',
         dt_TDate: formattedDate,
         int_loanno: loanNo,
@@ -99,16 +108,22 @@ const TransactionGenerator: React.FC = () => {
       };
     });
     setPreviewData(generatedData);
-  }, [rows, loanNo, name, officeId, transactionDate]);
+  }, [rows, loanNo, name, officeId]);
 
   const handleCopy = (data: any) => {
     const tsvData = Object.values(data).join('\t');
-    navigator.clipboard.writeText(tsvData);
+    navigator.clipboard.writeText(tsvData).then(() => {
+      setShowCopyPopup(true);
+      setTimeout(() => setShowCopyPopup(false), 2000);
+    });
   };
 
   const handleCopyAll = () => {
     const tsvData = previewData.map(row => Object.values(row).join('\t')).join('\n');
-    navigator.clipboard.writeText(tsvData);
+    navigator.clipboard.writeText(tsvData).then(() => {
+      setShowCopyPopup(true);
+      setTimeout(() => setShowCopyPopup(false), 2000);
+    });
   };
 
   const headers = [
@@ -118,8 +133,9 @@ const TransactionGenerator: React.FC = () => {
   ];
 
   return (
-    <Card className="w-full max-w-6xl mx-auto p-4">
-      <CardHeader>
+    <div className="relative">
+      <Card className="w-full max-w-6xl mx-auto p-4">
+        <CardHeader>
         <CardTitle className="text-2xl font-bold text-center">Transaction Generator</CardTitle>
         <CardDescription className="text-center">
           Enter the details to generate transaction rows.
@@ -130,7 +146,7 @@ const TransactionGenerator: React.FC = () => {
           <CardHeader>
             <CardTitle>Common Information</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="loanNo">Loan Number</Label>
               <Input id="loanNo" value={loanNo} onChange={(e) => setLoanNo(e.target.value)} />
@@ -142,18 +158,6 @@ const TransactionGenerator: React.FC = () => {
             <div className="space-y-2">
               <Label htmlFor="officeId">Office ID</Label>
               <Input id="officeId" value={officeId} onChange={(e) => setOfficeId(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="transactionDate">Transaction Date</Label>
-              <Input
-                id="transactionDate"
-                type="text"
-                placeholder="e.g., 21-10-2025"
-                value={transactionDateText}
-                onChange={(e) => setTransactionDateText(e.target.value)}
-                className={dateError ? "border-red-500" : ""}
-              />
-              {dateError && <p className="text-sm text-red-600">{dateError}</p>}
             </div>
           </CardContent>
         </Card>
@@ -172,6 +176,18 @@ const TransactionGenerator: React.FC = () => {
                 <div className="space-y-2">
                   <Label htmlFor={`amount-${index}`}>Received Amount</Label>
                   <Input id={`amount-${index}`} type="number" value={row.int_Rec} onChange={(e) => handleRowChange(index, 'int_Rec', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`transactionDate-${index}`}>Transaction Date</Label>
+                  <Input
+                    id={`transactionDate-${index}`}
+                    type="text"
+                    placeholder="e.g., 21-10-2025"
+                    value={row.transactionDateText}
+                    onChange={(e) => handleRowChange(index, 'transactionDateText', e.target.value)}
+                    className={row.dateError ? "border-red-500" : ""}
+                  />
+                  {row.dateError && <p className="text-sm text-red-600">{row.dateError}</p>}
                 </div>
               </CardContent>
             </Card>
@@ -211,7 +227,13 @@ const TransactionGenerator: React.FC = () => {
           </div>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+      {showCopyPopup && (
+        <div className="fixed bottom-5 right-5 bg-gray-800 text-white py-2 px-4 rounded-lg shadow-lg transition-opacity duration-300">
+          Copied to clipboard!
+        </div>
+      )}
+    </div>
   );
 };
 
