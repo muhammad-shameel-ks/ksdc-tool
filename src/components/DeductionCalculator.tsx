@@ -91,14 +91,14 @@ const DeductionCalculator: React.FC = () => {
           </div>
           <Button onClick={handleCopy} className="w-full sm:w-auto">{isCopied ? 'Copied!' : 'Copy for Excel'}</Button>
           
-          <div>
+          <div className="flex flex-col items-center">
             <Label className="text-xl font-bold mb-4 block">Row Preview</Label>
-            <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-x-auto">
-              <table className="min-w-full text-sm text-left">
+            <div className="border border-slate-200 dark:border-slate-700 rounded-lg inline-block">
+              <table className="text-sm text-left">
                 <thead className="bg-slate-100 dark:bg-slate-800">
                   <tr>
                     {headers.map((header) => (
-                      <th key={header} className="p-4 font-semibold text-slate-700 dark:text-slate-200">
+                      <th key={header} className="p-2 font-semibold text-slate-700 dark:text-slate-200">
                         {header}
                       </th>
                     ))}
@@ -107,7 +107,7 @@ const DeductionCalculator: React.FC = () => {
                 <tbody>
                   <tr className="border-t border-slate-200 dark:border-slate-700">
                     {preview.map((cell, index) => (
-                      <td key={index} className="p-4 text-gray-800 font-bold">
+                      <td key={index} className="p-2 text-gray-800 font-bold">
                         {cell}
                       </td>
                     ))}
