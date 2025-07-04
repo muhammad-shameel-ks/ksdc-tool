@@ -1,6 +1,7 @@
 import { EMICalculator } from "./components/EMICalculator";
 import { GSTCalculator } from "./components/GSTCalculator";
 import DeductionCalculator from "./components/DeductionCalculator";
+import TransactionGenerator from "./components/TransactionGenerator";
 import {
   Tabs,
   TabsContent,
@@ -21,11 +22,12 @@ function App() {
           </p>
         </div>
 
-        <Tabs defaultValue="emi" className="w-full max-w-4xl mx-auto">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="transaction-generator" className="w-full max-w-7xl mx-auto">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="emi">EMI Calculator</TabsTrigger>
             <TabsTrigger value="gst">GST Calculator</TabsTrigger>
             <TabsTrigger value="deduction">Deduction Calculator</TabsTrigger>
+            <TabsTrigger value="transaction-generator">Transaction Generator</TabsTrigger>
           </TabsList>
           <TabsContent value="emi">
             <div className="flex justify-center mt-8">
@@ -40,6 +42,11 @@ function App() {
           <TabsContent value="deduction">
             <div className="flex justify-center mt-8">
               <DeductionCalculator />
+            </div>
+          </TabsContent>
+          <TabsContent value="transaction-generator">
+            <div className="flex justify-center mt-8">
+              <TransactionGenerator />
             </div>
           </TabsContent>
         </Tabs>

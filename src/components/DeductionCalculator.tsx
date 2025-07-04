@@ -81,7 +81,7 @@ const DeductionCalculator: React.FC = () => {
               <Input id="legalFee" type="number" value={legalFee} onChange={(e) => setLegalFee(e.target.value)} />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="bc">Bank Charges</Label>
+              <Label htmlFor="bc">Beneficiary Charges</Label>
               <Input id="bc" type="number" value={bc} onChange={(e) => setBc(e.target.value)} />
             </div>
             <div className="grid gap-2 sm:col-span-2">
