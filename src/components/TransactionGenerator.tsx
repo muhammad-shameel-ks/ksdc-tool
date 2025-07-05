@@ -74,12 +74,11 @@ const TransactionGenerator: React.FC = () => {
     const generatedData = rows.map((row, index) => {
       const total = parseFloat(row.int_Rec) || 0;
       let gstAmount = 0;
-      let processingFee = total;
-
+      
       if (index === 1) { // PROCESSING FEE row
         // Reverse GST calculation: Amount is GST-inclusive
-        processingFee = (total * 100) / 118;
-        gstAmount = total - processingFee;
+        const baseAmount = (total * 100) / 118;
+        gstAmount = total - baseAmount;
       }
       const date = row.transactionDate;
       const formattedDate = date
@@ -92,7 +91,7 @@ const TransactionGenerator: React.FC = () => {
         int_Code: hardcodedData[index].int_Code,
         chr_Acc_Name: hardcodedData[index].chr_Acc_Name,
         chr_Type: hardcodedData[index].chr_Type,
-        int_Rec: index === 1 ? processingFee.toFixed(2) : total.toFixed(2),
+        int_Rec: total.toFixed(2),
         int_Pay: '0.00',
         dt_TDate: formattedDate,
         int_loanno: loanNo,
