@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Bug } from "lucide-react";
 import * as XLSX from "xlsx";
 import TransactionGenerator from "./TransactionGenerator";
+import { headerMappings } from "@/lib/headerMappings";
 
 const SmartPartPayment: React.FC = () => {
   const [data, setData] = useState<any[]>([]);
@@ -75,28 +76,69 @@ const SmartPartPayment: React.FC = () => {
             defval: "",
           });
 
-          if (rows.length < 3) {
-            setError("Invalid Excel format: Not enough rows.");
+          const nonEmptyRows = rows.filter(
+            (row) => !row.every((cell) => cell === "")
+          );
+
+          const normalize = (str: string) =>
+            (str || "").trim().toUpperCase().replace(/\s\s+/g, " ");
+
+          const mainHeaderRowIndex = nonEmptyRows.findIndex((row) =>
+            row.some(
+              (cell) => typeof cell === "string" && normalize(cell) === "SL NO"
+            )
+          );
+
+          if (mainHeaderRowIndex === -1) {
+            setError(
+              "Invalid Excel format: Could not find header row with 'SL NO'."
+            );
             return;
           }
 
-          const feeHeaders = rows[0];
-          const mainHeaders = rows[1];
-
-          const legalFeeIndex = feeHeaders.findIndex(
-            (h) => typeof h === "string" && h.includes("LEGAL FEE")
-          );
-          const processingFeeIndex = feeHeaders.findIndex(
-            (h) => typeof h === "string" && h.includes("PROCESSING FEE")
-          );
-          const bcIndex = feeHeaders.findIndex(
-            (h) => typeof h === "string" && h.includes("BC")
-          );
-          const bankIndex = feeHeaders.findIndex(
-            (h) => typeof h === "string" && h.includes("BANK")
+          const potentialFeeHeaderRows = nonEmptyRows.slice(0, mainHeaderRowIndex);
+          const feeHeaderRowIndex = potentialFeeHeaderRows.findIndex((row) =>
+            row.some(
+              (cell) =>
+                typeof cell === "string" &&
+                normalize(cell).includes("LEGAL FEE")
+            )
           );
 
-          const getHeaderIndex = (name: string) => mainHeaders.indexOf(name);
+          if (feeHeaderRowIndex === -1) {
+            setError(
+              "Invalid Excel format: Could not find fee header row with 'LEGAL FEE'."
+            );
+            return;
+          }
+
+          const mainHeaders = nonEmptyRows[mainHeaderRowIndex].map((h) =>
+            typeof h === "string" ? normalize(h) : ""
+          );
+          const feeHeaders = potentialFeeHeaderRows[feeHeaderRowIndex].map((h) =>
+            typeof h === "string" ? normalize(h) : ""
+          );
+
+          const getHeaderIndex = (aliases: string[], fromIndex = 0) => {
+            for (const alias of aliases) {
+              const normalizedAlias = normalize(alias);
+              const index = mainHeaders.indexOf(normalizedAlias, fromIndex);
+              if (index !== -1) return index;
+            }
+            return -1;
+          };
+
+          const getFeeHeaderIndex = (searchText: string) => {
+            return feeHeaders.findIndex((h) => h.includes(normalize(searchText)));
+          };
+
+          const legalFeeIndex = getFeeHeaderIndex("LEGAL FEE");
+          const processingFeeIndex = getFeeHeaderIndex("PROCESSING FEE");
+          const bcIndex = getFeeHeaderIndex("BC");
+          let bankStartIndex = getFeeHeaderIndex("BANK DETAILS");
+          if (bankStartIndex === -1) {
+            bankStartIndex = getFeeHeaderIndex("BANK");
+          }
 
           const debugLog: any[] = [];
 
@@ -137,32 +179,44 @@ const SmartPartPayment: React.FC = () => {
             return corrected;
           };
 
-          const parsedData = rows
-            .slice(2)
+          const dataRows = nonEmptyRows.slice(mainHeaderRowIndex + 1);
+
+          const parseFee = (fee: any): number | any => {
+            if (typeof fee === "string" && fee.includes("+")) {
+              return fee
+                .split("+")
+                .reduce((acc, val) => acc + Number(val.trim()), 0);
+            }
+            return fee;
+          };
+
+          const parsedData = dataRows
             .map((row) => {
               if (row.every((cell) => cell === "")) return null; // Skip empty rows
-              const loanNoRaw = row[getHeaderIndex("LOAN NO")];
+              const loanNoRaw = row[getHeaderIndex(headerMappings.loanNo)];
               return {
-                slNo: row[getHeaderIndex("SL NO")],
-                name: row[getHeaderIndex("NAME")],
-                scheme: row[getHeaderIndex("SCHEME")],
+                slNo: row[getHeaderIndex(headerMappings.slNo)],
+                name: row[getHeaderIndex(headerMappings.name)],
+                scheme: row[getHeaderIndex(headerMappings.scheme)],
                 loanNo: String(loanNoRaw),
-                agreementNumber: row[getHeaderIndex("agreement number")],
-                requiredAmount: row[getHeaderIndex("REQUIRED Amount")],
-                amountSanctioned: row[getHeaderIndex("AMOUNT SANCTIONED")],
+                agreementNumber:
+                  row[getHeaderIndex(headerMappings.agreementNumber)],
+                requiredAmount: row[getHeaderIndex(headerMappings.requiredAmount)],
+                amountSanctioned:
+                  row[getHeaderIndex(headerMappings.amountSanctioned)],
                 installments: [
-                  row[getHeaderIndex("INSTALLMENT 1")],
-                  row[getHeaderIndex("INSTALLMENT 2")],
-                  row[getHeaderIndex("INSTALLMENT 3")],
-                  row[getHeaderIndex("INSTALLMENT 4")],
+                  row[getHeaderIndex(headerMappings.installment1)],
+                  row[getHeaderIndex(headerMappings.installment2)],
+                  row[getHeaderIndex(headerMappings.installment3)],
+                  row[getHeaderIndex(headerMappings.installment4)],
                 ],
                 legalFee: {
-                  amount: row[legalFeeIndex],
+                  amount: parseFee(row[legalFeeIndex]),
                   date: correctDate(row[legalFeeIndex + 1], "Legal Fee"),
                   receiptNo: row[legalFeeIndex + 2],
                 },
                 processingFee: {
-                  amount: row[processingFeeIndex],
+                  amount: parseFee(row[processingFeeIndex]),
                   date: correctDate(
                     row[processingFeeIndex + 1],
                     "Processing Fee"
@@ -170,15 +224,21 @@ const SmartPartPayment: React.FC = () => {
                   receiptNo: row[processingFeeIndex + 2],
                 },
                 bc: {
-                  amount: row[bcIndex],
+                  amount: parseFee(row[bcIndex]),
                   date: correctDate(row[bcIndex + 1], "BC"),
                   receiptNo: row[bcIndex + 2],
                 },
                 bankDetails: {
-                  accountNo: row[bankIndex],
-                  ifsc: row[bankIndex + 1],
-                  bankName: row[bankIndex + 2],
-                  branch: row[bankIndex + 3],
+                  accountNo: row[getHeaderIndex(headerMappings.bankAccountNo, bankStartIndex)],
+                  ifsc: row[
+                    getHeaderIndex(headerMappings.bankIfsc, bankStartIndex)
+                  ],
+                  bankName: row[
+                    getHeaderIndex(headerMappings.bankName, bankStartIndex)
+                  ],
+                  branch: row[
+                    getHeaderIndex(headerMappings.bankBranch, bankStartIndex)
+                  ],
                 },
               };
             })
