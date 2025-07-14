@@ -20,6 +20,10 @@ const SmartPartPaymentGen: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [fileName, setFileName] = useState("");
   const [error, setError] = useState("");
+  const [googleSheetUrl, setGoogleSheetUrl] = useState("");
+  const [isFetching, setIsFetching] = useState(false);
+  const [urlError, setUrlError] = useState("");
+  const [showWarningToast, setShowWarningToast] = useState(false);
 
   // State from TransactionGenerator
   const [loanNo, setLoanNo] = useState("");
@@ -75,155 +79,198 @@ const SmartPartPaymentGen: React.FC = () => {
     return /^[A-Z]{3}\/\d+$/.test(loanNo);
   };
 
+  const processExcelData = (excelData: ArrayBuffer) => {
+    try {
+      const workbook = XLSX.read(excelData, { type: "array", cellDates: true });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, {
+        header: 1,
+        defval: "",
+      });
+
+      const nonEmptyRows = rows.filter(
+        (row) => !row.every((cell) => cell === "")
+      );
+
+      const normalize = (str: string) =>
+        (str || "").trim().toUpperCase().replace(/\s\s+/g, " ");
+
+      const mainHeaderRowIndex = nonEmptyRows.findIndex((row) =>
+        row.some(
+          (cell) => typeof cell === "string" && normalize(cell) === "SL NO"
+        )
+      );
+
+      if (mainHeaderRowIndex === -1) {
+        setError("Invalid Excel format: Could not find header row with 'SL NO'.");
+        return;
+      }
+
+      const potentialFeeHeaderRows = nonEmptyRows.slice(0, mainHeaderRowIndex);
+      const feeHeaderRowIndex = potentialFeeHeaderRows.findIndex((row) =>
+        row.some(
+          (cell) =>
+            typeof cell === "string" &&
+            normalize(cell).includes("LEGAL FEE")
+        )
+      );
+
+      if (feeHeaderRowIndex === -1) {
+        setError("Invalid Excel format: Could not find fee header row with 'LEGAL FEE'.");
+        return;
+      }
+
+      const mainHeaders = nonEmptyRows[mainHeaderRowIndex].map((h) =>
+        typeof h === "string" ? normalize(h) : ""
+      );
+      const feeHeaders = potentialFeeHeaderRows[feeHeaderRowIndex].map((h) =>
+        typeof h === "string" ? normalize(h) : ""
+      );
+
+      const getHeaderIndex = (aliases: string[], fromIndex = 0) => {
+        for (const alias of aliases) {
+          const normalizedAlias = normalize(alias);
+          const index = mainHeaders.indexOf(normalizedAlias, fromIndex);
+          if (index !== -1) return index;
+        }
+        return -1;
+      };
+
+      const getFeeHeaderIndex = (searchText: string) => {
+        return feeHeaders.findIndex((h) => h.includes(normalize(searchText)));
+      };
+
+      const legalFeeIndex = getFeeHeaderIndex("LEGAL FEE");
+      const processingFeeIndex = getFeeHeaderIndex("PROCESSING FEE");
+      const bcIndex = getFeeHeaderIndex("BC");
+      let bankStartIndex = getFeeHeaderIndex("BANK DETAILS");
+      if (bankStartIndex === -1) {
+        bankStartIndex = getFeeHeaderIndex("BANK");
+      }
+
+      const debugLog: any[] = [];
+
+      const correctDate = (d: any, label: string): Date | any => {
+        if (!(d instanceof Date)) {
+          debugLog.push({ label, input: d, inputType: typeof d, output: d, note: "Not a Date object, returned as-is" });
+          return d;
+        }
+        const corrected = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+        debugLog.push({ label, originalDate: new Date(d).toString(), correctedDate: corrected.toString(), note: "Added 1 day to compensate for timezone shift" });
+        return corrected;
+      };
+
+      const dataRows = nonEmptyRows.slice(mainHeaderRowIndex + 1);
+
+      const parseFee = (fee: any): number | any => {
+        if (typeof fee === "string" && fee.includes("+")) {
+          return fee.split("+").reduce((acc, val) => acc + Number(val.trim()), 0);
+        }
+        return fee;
+      };
+
+      const parsedData = dataRows
+        .map((row) => {
+          if (row.every((cell) => cell === "")) return null;
+          const loanNoRaw = row[getHeaderIndex(headerMappings.loanNo)];
+          return {
+            slNo: row[getHeaderIndex(headerMappings.slNo)],
+            name: row[getHeaderIndex(headerMappings.name)],
+            scheme: row[getHeaderIndex(headerMappings.scheme)],
+            loanNo: String(loanNoRaw),
+            agreementNumber: row[getHeaderIndex(headerMappings.agreementNumber)],
+            requiredAmount: row[getHeaderIndex(headerMappings.requiredAmount)],
+            amountSanctioned: row[getHeaderIndex(headerMappings.amountSanctioned)],
+            installments: [
+              row[getHeaderIndex(headerMappings.installment1)],
+              row[getHeaderIndex(headerMappings.installment2)],
+              row[getHeaderIndex(headerMappings.installment3)],
+              row[getHeaderIndex(headerMappings.installment4)],
+            ],
+            legalFee: {
+              amount: parseFee(row[legalFeeIndex]),
+              date: correctDate(row[legalFeeIndex + 1], "Legal Fee"),
+              receiptNo: row[legalFeeIndex + 2],
+            },
+            processingFee: {
+              amount: parseFee(row[processingFeeIndex]),
+              date: correctDate(row[processingFeeIndex + 1], "Processing Fee"),
+              receiptNo: row[processingFeeIndex + 2],
+            },
+            bc: {
+              amount: parseFee(row[bcIndex]),
+              date: correctDate(row[bcIndex + 1], "BC"),
+              receiptNo: row[bcIndex + 2],
+            },
+            bankDetails: {
+              accountNo: row[getHeaderIndex(headerMappings.bankAccountNo, bankStartIndex)],
+              ifsc: row[getHeaderIndex(headerMappings.bankIfsc, bankStartIndex)],
+              bankName: row[getHeaderIndex(headerMappings.bankName, bankStartIndex)],
+              branch: row[getHeaderIndex(headerMappings.bankBranch, bankStartIndex)],
+            },
+          };
+        })
+        .filter(Boolean);
+
+      setData(parsedData);
+      setCurrentIndex(0);
+      setError("");
+      setUrlError("");
+    } catch (err) {
+      console.error(err);
+      setError("Error parsing the Excel file. Make sure it follows the template.");
+    }
+  };
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setFileName(file.name);
       const reader = new FileReader();
       reader.onload = (e) => {
-        try {
-          const data = e.target?.result;
-          const workbook = XLSX.read(data, { type: "array", cellDates: true });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, {
-            header: 1,
-            defval: "",
-          });
-
-          const nonEmptyRows = rows.filter(
-            (row) => !row.every((cell) => cell === "")
-          );
-
-          const normalize = (str: string) =>
-            (str || "").trim().toUpperCase().replace(/\s\s+/g, " ");
-
-          const mainHeaderRowIndex = nonEmptyRows.findIndex((row) =>
-            row.some(
-              (cell) => typeof cell === "string" && normalize(cell) === "SL NO"
-            )
-          );
-
-          if (mainHeaderRowIndex === -1) {
-            setError("Invalid Excel format: Could not find header row with 'SL NO'.");
-            return;
-          }
-
-          const potentialFeeHeaderRows = nonEmptyRows.slice(0, mainHeaderRowIndex);
-          const feeHeaderRowIndex = potentialFeeHeaderRows.findIndex((row) =>
-            row.some(
-              (cell) =>
-                typeof cell === "string" &&
-                normalize(cell).includes("LEGAL FEE")
-            )
-          );
-
-          if (feeHeaderRowIndex === -1) {
-            setError("Invalid Excel format: Could not find fee header row with 'LEGAL FEE'.");
-            return;
-          }
-
-          const mainHeaders = nonEmptyRows[mainHeaderRowIndex].map((h) =>
-            typeof h === "string" ? normalize(h) : ""
-          );
-          const feeHeaders = potentialFeeHeaderRows[feeHeaderRowIndex].map((h) =>
-            typeof h === "string" ? normalize(h) : ""
-          );
-
-          const getHeaderIndex = (aliases: string[], fromIndex = 0) => {
-            for (const alias of aliases) {
-              const normalizedAlias = normalize(alias);
-              const index = mainHeaders.indexOf(normalizedAlias, fromIndex);
-              if (index !== -1) return index;
-            }
-            return -1;
-          };
-
-          const getFeeHeaderIndex = (searchText: string) => {
-            return feeHeaders.findIndex((h) => h.includes(normalize(searchText)));
-          };
-
-          const legalFeeIndex = getFeeHeaderIndex("LEGAL FEE");
-          const processingFeeIndex = getFeeHeaderIndex("PROCESSING FEE");
-          const bcIndex = getFeeHeaderIndex("BC");
-          let bankStartIndex = getFeeHeaderIndex("BANK DETAILS");
-          if (bankStartIndex === -1) {
-            bankStartIndex = getFeeHeaderIndex("BANK");
-          }
-
-          const debugLog: any[] = [];
-
-          const correctDate = (d: any, label: string): Date | any => {
-            if (!(d instanceof Date)) {
-              debugLog.push({ label, input: d, inputType: typeof d, output: d, note: "Not a Date object, returned as-is" });
-              return d;
-            }
-            const corrected = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
-            debugLog.push({ label, originalDate: new Date(d).toString(), correctedDate: corrected.toString(), note: "Added 1 day to compensate for timezone shift" });
-            return corrected;
-          };
-
-          const dataRows = nonEmptyRows.slice(mainHeaderRowIndex + 1);
-
-          const parseFee = (fee: any): number | any => {
-            if (typeof fee === "string" && fee.includes("+")) {
-              return fee.split("+").reduce((acc, val) => acc + Number(val.trim()), 0);
-            }
-            return fee;
-          };
-
-          const parsedData = dataRows
-            .map((row) => {
-              if (row.every((cell) => cell === "")) return null;
-              const loanNoRaw = row[getHeaderIndex(headerMappings.loanNo)];
-              return {
-                slNo: row[getHeaderIndex(headerMappings.slNo)],
-                name: row[getHeaderIndex(headerMappings.name)],
-                scheme: row[getHeaderIndex(headerMappings.scheme)],
-                loanNo: String(loanNoRaw),
-                agreementNumber: row[getHeaderIndex(headerMappings.agreementNumber)],
-                requiredAmount: row[getHeaderIndex(headerMappings.requiredAmount)],
-                amountSanctioned: row[getHeaderIndex(headerMappings.amountSanctioned)],
-                installments: [
-                  row[getHeaderIndex(headerMappings.installment1)],
-                  row[getHeaderIndex(headerMappings.installment2)],
-                  row[getHeaderIndex(headerMappings.installment3)],
-                  row[getHeaderIndex(headerMappings.installment4)],
-                ],
-                legalFee: {
-                  amount: parseFee(row[legalFeeIndex]),
-                  date: correctDate(row[legalFeeIndex + 1], "Legal Fee"),
-                  receiptNo: row[legalFeeIndex + 2],
-                },
-                processingFee: {
-                  amount: parseFee(row[processingFeeIndex]),
-                  date: correctDate(row[processingFeeIndex + 1], "Processing Fee"),
-                  receiptNo: row[processingFeeIndex + 2],
-                },
-                bc: {
-                  amount: parseFee(row[bcIndex]),
-                  date: correctDate(row[bcIndex + 1], "BC"),
-                  receiptNo: row[bcIndex + 2],
-                },
-                bankDetails: {
-                  accountNo: row[getHeaderIndex(headerMappings.bankAccountNo, bankStartIndex)],
-                  ifsc: row[getHeaderIndex(headerMappings.bankIfsc, bankStartIndex)],
-                  bankName: row[getHeaderIndex(headerMappings.bankName, bankStartIndex)],
-                  branch: row[getHeaderIndex(headerMappings.bankBranch, bankStartIndex)],
-                },
-              };
-            })
-            .filter(Boolean);
-
-          setData(parsedData);
-          setCurrentIndex(0);
-          setError("");
-        } catch (err) {
-          console.error(err);
-          setError("Error parsing the Excel file. Make sure it follows the template.");
+        if (e.target?.result) {
+          processExcelData(e.target.result as ArrayBuffer);
         }
       };
       reader.readAsArrayBuffer(file);
+    }
+  };
+
+  const handleFetchFromUrl = async () => {
+    if (!googleSheetUrl) {
+      setUrlError("Please enter a Google Sheets URL.");
+      return;
+    }
+
+    const sheetIdRegex = /spreadsheets\/d\/([a-zA-Z0-9-_]+)/;
+    const match = googleSheetUrl.match(sheetIdRegex);
+
+    if (!match || !match[1]) {
+      setUrlError("Invalid Google Sheets URL. Please check the format.");
+      return;
+    }
+
+    const sheetId = match[1];
+    const exportUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=xlsx`;
+
+    setIsFetching(true);
+    setUrlError("");
+    setError("");
+
+    try {
+      const response = await fetch(exportUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch spreadsheet. Status: ${response.status}`);
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      setFileName(googleSheetUrl); // Use URL as filename
+      processExcelData(arrayBuffer);
+    } catch (err: any) {
+      console.error(err);
+      setUrlError(`Error fetching from URL: ${err.message}`);
+    } finally {
+      setIsFetching(false);
     }
   };
 
@@ -266,6 +313,16 @@ const SmartPartPaymentGen: React.FC = () => {
       setRows(newRows);
     }
   }, [data, currentIndex]);
+
+  useEffect(() => {
+    if (data.length > 0) {
+      setShowWarningToast(true);
+      const timer = setTimeout(() => {
+        setShowWarningToast(false);
+      }, 5000); // Hide after 5 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [data]);
 
   const handleRowChange = (index: number, field: string, value: any) => {
     const newRows = [...rows];
@@ -394,6 +451,32 @@ const SmartPartPaymentGen: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
+          {/* Google Sheet URL Input Section */}
+          <div className="space-y-2">
+            <Label htmlFor="google-sheet-url">Or Fetch from Google Sheets URL</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="google-sheet-url"
+                type="url"
+                placeholder="https://docs.google.com/spreadsheets/d/..."
+                value={googleSheetUrl}
+                onChange={(e) => setGoogleSheetUrl(e.target.value)}
+                disabled={isFetching}
+              />
+              <Button onClick={handleFetchFromUrl} disabled={isFetching}>
+                {isFetching ? "Fetching..." : "Fetch"}
+              </Button>
+            </div>
+            {urlError && <p className="text-sm text-red-600">{urlError}</p>}
+            <p className="text-xs text-gray-500 mt-1">Note: Your Google Sheet must be public for the fetch to work.</p>
+          </div>
+
+          <div className="relative flex py-5 items-center">
+            <div className="flex-grow border-t border-gray-400"></div>
+            <span className="flex-shrink mx-4 text-gray-400">OR</span>
+            <div className="flex-grow border-t border-gray-400"></div>
+          </div>
+
           {/* File Upload Section */}
           <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg">
             <Input id="file-upload" type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="hidden" />
@@ -509,6 +592,12 @@ const SmartPartPaymentGen: React.FC = () => {
       {showCopyPopup && (
         <div className="fixed bottom-5 right-5 bg-gray-800 text-white py-2 px-4 rounded-lg shadow-lg transition-opacity duration-300">
           Copied to clipboard!
+        </div>
+      )}
+      {showWarningToast && (
+        <div className="fixed top-5 right-5 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg shadow-lg transition-opacity duration-300" role="alert">
+          <p className="font-bold">Warning</p>
+          <p>Always double or triple-check data before copying.</p>
         </div>
       )}
     </div>
