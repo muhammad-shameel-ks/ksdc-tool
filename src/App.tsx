@@ -1,8 +1,7 @@
 import { EMICalculator } from "./components/EMICalculator";
 import { GSTCalculator } from "./components/GSTCalculator";
 import DeductionCalculator from "./components/DeductionCalculator";
-import TransactionGenerator from "./components/TransactionGenerator";
-import SmartPartPayment from "./components/SmartPartPayment";
+import SmartPartPaymentGen from "./components/SmartPartPaymentGen";
 import {
   Tabs,
   TabsContent,
@@ -23,13 +22,12 @@ function App() {
           </p>
         </div>
 
-        <Tabs defaultValue="transaction-generator" className="w-full max-w-7xl mx-auto">
-          <TabsList className="grid w-full grid-cols-5">
+        <Tabs defaultValue="smart-part-payment-gen" className="w-full max-w-7xl mx-auto">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="emi">EMI Calculator</TabsTrigger>
             <TabsTrigger value="gst">GST Calculator</TabsTrigger>
             <TabsTrigger value="deduction">Deduction Calculator</TabsTrigger>
-            <TabsTrigger value="transaction-generator">Transaction Generator</TabsTrigger>
-            <TabsTrigger value="smart-part-payment">Smart Part Payment</TabsTrigger>
+            <TabsTrigger value="transaction-generator">Smart Part Payment Gen</TabsTrigger>
           </TabsList>
           <TabsContent value="emi">
             <div className="flex justify-center mt-8">
@@ -48,12 +46,7 @@ function App() {
           </TabsContent>
           <TabsContent value="transaction-generator">
             <div className="flex justify-center mt-8">
-              <TransactionGenerator />
-            </div>
-          </TabsContent>
-          <TabsContent value="smart-part-payment">
-            <div className="flex justify-center mt-8">
-              <SmartPartPayment />
+              <SmartPartPaymentGen />
             </div>
           </TabsContent>
         </Tabs>
