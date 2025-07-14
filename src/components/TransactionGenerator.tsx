@@ -6,7 +6,18 @@ import { Button } from "@/components/ui/button";
 import { ClipboardCopy } from 'lucide-react';
 import { parse, isValid } from 'date-fns';
 
-const TransactionGenerator: React.FC = () => {
+interface TransactionGeneratorProps {
+  initialData?: {
+    loanNo: string;
+    name: string;
+    officeId: string;
+    legalFee: { amount: string; date: string; receiptNo: string };
+    processingFee: { amount:string; date: string; receiptNo: string };
+    bc: { amount: string; date: string; receiptNo: string };
+  };
+}
+
+const TransactionGenerator: React.FC<TransactionGeneratorProps> = ({ initialData }) => {
   // Common Fields
   const [loanNo, setLoanNo] = useState('');
   const [name, setName] = useState('');
@@ -22,6 +33,46 @@ const TransactionGenerator: React.FC = () => {
   const [previewData, setPreviewData] = useState<any[]>([]);
   const [showCopyPopup, setShowCopyPopup] = useState(false);
 
+  useEffect(() => {
+    if (initialData) {
+      setLoanNo(initialData.loanNo);
+      setName(initialData.name);
+      setOfficeId(initialData.officeId);
+
+      const newRows = [...rows];
+      
+      const formatDate = (date: any) => {
+        if (date instanceof Date) {
+          return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
+        }
+        return date;
+      };
+      
+      // Legal Fee
+      newRows[0].vchr_TransNo = initialData.legalFee.receiptNo;
+      newRows[0].int_Rec = initialData.legalFee.amount;
+      const legalFeeDate = formatDate(initialData.legalFee.date);
+      newRows[0].transactionDateText = legalFeeDate;
+      newRows[0].transactionDate = parseSmartDate(legalFeeDate);
+
+      // Processing Fee
+      newRows[1].vchr_TransNo = initialData.processingFee.receiptNo;
+      newRows[1].int_Rec = initialData.processingFee.amount;
+      const processingFeeDate = formatDate(initialData.processingFee.date);
+      newRows[1].transactionDateText = processingFeeDate;
+      newRows[1].transactionDate = parseSmartDate(processingFeeDate);
+
+      // BC
+      newRows[2].vchr_TransNo = initialData.bc.receiptNo;
+      newRows[2].int_Rec = initialData.bc.amount;
+      const bcDate = formatDate(initialData.bc.date);
+      newRows[2].transactionDateText = bcDate;
+      newRows[2].transactionDate = parseSmartDate(bcDate);
+
+      setRows(newRows);
+    }
+  }, [initialData]);
+
   const handleRowChange = (index: number, field: string, value: any) => {
     const newRows = [...rows];
     const row = newRows[index];
@@ -30,7 +81,7 @@ const TransactionGenerator: React.FC = () => {
     if (field === 'transactionDateText') {
       const parsedDate = parseSmartDate(value);
       if (value && !parsedDate) {
-        row.dateError = 'Invalid date format. Try dd-mm-yyyy';
+        row.dateError = 'Invalid date format. Try mm-dd-yyyy';
       } else {
         row.dateError = '';
       }
@@ -40,9 +91,18 @@ const TransactionGenerator: React.FC = () => {
     setRows(newRows);
   };
 
-  const parseSmartDate = (dateText: string): Date | null => {
-    if (!dateText.trim()) return null;
-    const formats = ["dd-MM-yyyy", "dd/MM/yyyy", "dd.MM.yyyy", "yyyy-MM-dd", "MM/dd/yyyy", "dd-MM-yy", "dd/MM/yy"];
+  const parseSmartDate = (dateText: string | Date): Date | null => {
+    if (!dateText) return null;
+
+    if (dateText instanceof Date) {
+      return isValid(dateText) ? dateText : null;
+    }
+
+    if (typeof dateText !== 'string' || !dateText.trim()) {
+      return null;
+    }
+    
+    const formats = ["MM-dd-yyyy", "dd-MM-yyyy", "dd/MM/yyyy", "dd.MM.yyyy", "yyyy-MM-dd", "MM/dd/yyyy", "dd-MM-yy", "dd/MM/yy"];
     for (const formatStr of formats) {
         try {
             const parsed = parse(dateText, formatStr, new Date());
@@ -195,7 +255,7 @@ const TransactionGenerator: React.FC = () => {
                 <Input
                   id={`transactionDate-${index}`}
                   type="text"
-                  placeholder="e.g., 21-10-2025"
+                  placeholder="e.g., 10-21-2025"
                   value={row.transactionDateText}
                   onChange={(e) => handleRowChange(index, 'transactionDateText', e.target.value)}
                   className={row.dateError ? "border-red-500" : ""}
