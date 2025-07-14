@@ -9,7 +9,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ClipboardCopy, Bug } from "lucide-react";
+import { ClipboardCopy } from "lucide-react";
 import { parse, isValid } from "date-fns";
 import * as XLSX from "xlsx";
 import { headerMappings } from "@/lib/headerMappings";
@@ -20,8 +20,6 @@ const SmartPartPaymentGen: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [fileName, setFileName] = useState("");
   const [error, setError] = useState("");
-  const [showDebug, setShowDebug] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<any[]>([]);
 
   // State from TransactionGenerator
   const [loanNo, setLoanNo] = useState("");
@@ -218,7 +216,6 @@ const SmartPartPaymentGen: React.FC = () => {
             .filter(Boolean);
 
           setData(parsedData);
-          setDebugInfo(debugLog);
           setCurrentIndex(0);
           setError("");
         } catch (err) {
