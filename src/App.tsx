@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { EMICalculator } from "./components/EMICalculator";
 import { GSTCalculator } from "./components/GSTCalculator";
 import DeductionCalculator from "./components/DeductionCalculator";
@@ -8,6 +9,47 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+
+const DbStatus = () => {
+  const [status, setStatus] = useState({ message: '', version: '' });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/test');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setStatus({ message: data.message, version: data.version });
+      } catch (e: any) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStatus();
+  }, []);
+
+  return (
+    <div className="text-center p-4 my-4 rounded-md">
+      <h2 className="text-lg font-semibold">Database Connection Status</h2>
+      {loading && <p className="text-blue-500">Loading...</p>}
+      {error && <p className="text-red-500">Error: {error}</p>}
+      {!loading && !error && (
+        <>
+          <p className="text-green-500">{status.message}</p>
+          <p className="text-sm text-muted-foreground">{status.version}</p>
+        </>
+      )}
+    </div>
+  );
+};
+
 
 function App() {
   return (
@@ -50,6 +92,8 @@ function App() {
             </div>
           </TabsContent>
         </Tabs>
+
+        <DbStatus />
 
         <footer className="mt-16 text-center text-sm text-muted-foreground">
           <p>Built with React, TypeScript, and shadcn/ui</p>

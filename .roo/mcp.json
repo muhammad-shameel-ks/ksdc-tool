@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "mssql": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/home/ksdcit/.local/share/pipx/venvs/mssql-mcp-server",
+        "run",
+        "mssql_mcp_server"
+      ],
+      "env": {
+        "MSSQL_DRIVER": "ODBC Driver 17 for SQL Server",
+        "MSSQL_SERVER": "109.73.161.154\\SQLEXPRESS",
+        "MSSQL_USER": "sa",
+        "MSSQL_PASSWORD": "zjcuZysKv31@",
+        "MSSQL_DATABASE": "KSDC_SMART_LIVE_STAGING"
+      },
+      "disabled": false,
+      "alwaysAllow": []
+    }
+  }
+}

@@ -14,5 +14,12 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0', // Expose to local network
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 });
