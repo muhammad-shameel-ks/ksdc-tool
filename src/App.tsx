@@ -3,6 +3,13 @@ import { EMICalculator } from "./components/EMICalculator";
 import { GSTCalculator } from "./components/GSTCalculator";
 import DeductionCalculator from "./components/DeductionCalculator";
 import SmartPartPaymentGen from "./components/SmartPartPaymentGen";
+import { LoanAppIdFinder } from "./components/LoanAppIdFinder";
+import { Bug } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Tabs,
   TabsContent,
@@ -11,7 +18,7 @@ import {
 } from "@/components/ui/tabs";
 
 const DbStatus = () => {
-  const [status, setStatus] = useState({ message: '', version: '' });
+  const [status, setStatus] = useState({ message: "", dbName: "" });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,12 +26,12 @@ const DbStatus = () => {
     const fetchStatus = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/test');
+        const response = await fetch("/api/test");
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        setStatus({ message: data.message, version: data.version });
+        setStatus({ message: data.message, dbName: data.dbName });
       } catch (e: any) {
         setError(e.message);
       } finally {
@@ -36,16 +43,35 @@ const DbStatus = () => {
   }, []);
 
   return (
-    <div className="text-center p-4 my-4 rounded-md">
-      <h2 className="text-lg font-semibold">Database Connection Status</h2>
-      {loading && <p className="text-blue-500">Loading...</p>}
-      {error && <p className="text-red-500">Error: {error}</p>}
-      {!loading && !error && (
-        <>
-          <p className="text-green-500">{status.message}</p>
-          <p className="text-sm text-muted-foreground">{status.version}</p>
-        </>
-      )}
+    <div className="fixed top-4 right-4 z-50">
+      <Popover>
+        <PopoverTrigger>
+          <div className="flex items-center space-x-2 cursor-pointer rounded-full bg-card p-2 border">
+            <div
+              className={`w-3 h-3 rounded-full ${
+                loading
+                  ? "bg-yellow-500 animate-pulse"
+                  : error
+                  ? "bg-red-500"
+                  : "bg-green-500"
+              }`}
+            ></div>
+            <span className="text-sm text-muted-foreground">
+              {loading ? "Checking..." : error ? "Error" : "Connected"}
+            </span>
+          </div>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto">
+          {loading && <p>Loading...</p>}
+          {error && <p>Error: {error}</p>}
+          {!loading && !error && (
+            <div>
+              <p className="font-semibold">Database</p>
+              <p>{status.dbName}</p>
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
     </div>
   );
 };
@@ -54,6 +80,7 @@ const DbStatus = () => {
 function App() {
   return (
     <div className="min-h-screen bg-background">
+      <DbStatus />
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-foreground mb-2">
@@ -93,11 +120,16 @@ function App() {
           </TabsContent>
         </Tabs>
 
-        <DbStatus />
-
-        <footer className="mt-16 text-center text-sm text-muted-foreground">
-          <p>Built with React, TypeScript, and shadcn/ui</p>
-        </footer>
+        <div className="fixed bottom-4 left-4">
+          <Popover>
+            <PopoverTrigger>
+              <Bug className="h-8 w-8 text-muted-foreground hover:text-foreground" />
+            </PopoverTrigger>
+            <PopoverContent>
+              <LoanAppIdFinder />
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
     </div>
   );

@@ -18,6 +18,14 @@
       },
       "disabled": false,
       "alwaysAllow": []
+    },
+    "git": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-git",
+        "--repository",
+        "/home/ksdcit/ksdc_tool"
+      ]
     }
   }
 }
