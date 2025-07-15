@@ -46,11 +46,13 @@ app.get('/api/loan-details', async (req: Request, res: Response) => {
 
   try {
     const pool = getPool();
-    const result = await pool.request().query(
-      `SELECT int_loanappid, vchr_appreceivregno, vchr_applname, int_loanno
-       FROM tbl_loanapp
-       WHERE ${queryColumn} = '${searchTerm}'`
-    );
+    const result = await pool.request()
+      .input('searchTerm', searchTerm)
+      .query(
+        `SELECT int_loanappid, vchr_appreceivregno, vchr_applname, int_loanno
+         FROM tbl_loanapp
+         WHERE ${queryColumn} = @searchTerm`
+      );
     
     if (result.recordset.length === 0) {
       return res.status(404).json({ error: 'Loan not found' });
