@@ -5,7 +5,6 @@ import { dirname } from "path";
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: "/EMI-GST-CALCULATOR-FOR-KSDC/",
   plugins: [react()],
   resolve: {
     alias: {
