@@ -13,7 +13,8 @@
         "MSSQL_USER": "sa",
         "MSSQL_PASSWORD": "zjcuZysKv31@",
         "MSSQL_DATABASE": "KSDC_SMART_LIVE_STAGING",
-        "MSSQL_DRIVER": "ODBC Driver 18 for SQL Server"
+        "MSSQL_DRIVER": "ODBC Driver 18 for SQL Server",
+        "MSSQL_READ_ONLY": "true"
       },
       "disabled": false,
       "alwaysAllow": []
