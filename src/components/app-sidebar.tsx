@@ -61,7 +61,7 @@ const DbStatus = () => {
   const fetchStatus = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:3001/api/current-db");
+      const response = await fetch("/api/current-db");
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -83,7 +83,7 @@ const DbStatus = () => {
     try {
       setIsSwitching(true);
       setError(null);
-      const response = await fetch("http://localhost:3001/api/switch-db", {
+      const response = await fetch("/api/switch-db", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
