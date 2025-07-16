@@ -4,6 +4,7 @@ import {
   IconDashboard,
   IconFolder,
   IconInnerShadowTop,
+  IconSearch,
 } from "@tabler/icons-react"
 import {
   Popover,
@@ -40,33 +41,65 @@ const data = {
       url: "/smart-part-payment-gen",
       icon: IconFolder,
     },
+    {
+      title: "Receipt Checker",
+      url: "/receipt-checker",
+      icon: IconSearch,
+    },
   ],
 }
 
 const DbStatus = () => {
-  const [status, setStatus] = React.useState({ message: "", dbName: "" });
+  const [currentDb, setCurrentDb] = React.useState("");
+  const [selectedDb, setSelectedDb] = React.useState("");
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [isSwitching, setIsSwitching] = React.useState(false);
+
+  const availableDbs = ["KSDC_SMART_LIVE_STAGING", "KSDC_SMART_LIVE"];
+
+  const fetchStatus = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("http://localhost:3001/api/current-db");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setCurrentDb(data.dbName);
+      setSelectedDb(data.dbName);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   React.useEffect(() => {
-    const fetchStatus = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch("/api/test");
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setStatus({ message: data.message, dbName: data.dbName });
-      } catch (e: any) {
-        setError(e.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchStatus();
   }, []);
+
+  const handleSwitch = async () => {
+    try {
+      setIsSwitching(true);
+      setError(null);
+      const response = await fetch("http://localhost:3001/api/switch-db", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ dbName: selectedDb }),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to switch DB");
+      }
+      await fetchStatus(); // Refresh status
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setIsSwitching(false);
+    }
+  };
 
   return (
     <div className="z-50 group-data-[collapsible=icon]:hidden">
@@ -75,7 +108,7 @@ const DbStatus = () => {
           <div className="flex items-center space-x-2 cursor-pointer rounded-full bg-card p-2 border">
             <div
               className={`w-3 h-3 rounded-full ${
-                loading
+                loading || isSwitching
                   ? "bg-yellow-500 animate-pulse"
                   : error
                   ? "bg-red-500"
@@ -87,18 +120,33 @@ const DbStatus = () => {
                 ? "Checking..."
                 : error
                 ? "Error"
-                : status.dbName}
+                : currentDb}
             </span>
           </div>
         </PopoverTrigger>
-        <PopoverContent className="w-auto">
-          <p>
-            {loading
-              ? "Checking connection..."
-              : error
-              ? `Error: ${error}`
-              : "Connected"}
-          </p>
+        <PopoverContent className="w-auto p-4">
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Switch Database</p>
+            <select
+              value={selectedDb}
+              onChange={(e) => setSelectedDb(e.target.value)}
+              className="w-full p-2 border rounded-md"
+            >
+              {availableDbs.map((db) => (
+                <option key={db} value={db}>
+                  {db}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleSwitch}
+              disabled={isSwitching || selectedDb === currentDb}
+              className="w-full bg-primary text-primary-foreground p-2 rounded-md disabled:opacity-50"
+            >
+              {isSwitching ? "Switching..." : "Switch"}
+            </button>
+            {error && <p className="text-red-500 text-xs">{error}</p>}
+          </div>
         </PopoverContent>
       </Popover>
     </div>
@@ -107,7 +155,7 @@ const DbStatus = () => {
 
 export function AppSidebar({ setPage, ...props }: React.ComponentProps<typeof Sidebar> & { setPage: (page: string) => void }) {
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar collapsible="icon" variant="inset" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center justify-between">

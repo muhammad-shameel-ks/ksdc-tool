@@ -4,35 +4,48 @@ import dotenv from 'dotenv';
 // Load environment variables from .env file
 dotenv.config();
 
-const sqlConfig: sql.config = {
+const baseConfig = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   server: process.env.DB_SERVER!,
-  database: process.env.DB_DATABASE,
   pool: {
     max: 10,
     min: 0,
-    idleTimeoutMillis: 30000
+    idleTimeoutMillis: 30000,
   },
   options: {
     encrypt: process.env.NODE_ENV === 'production', // Use this if you're on Azure SQL
-    trustServerCertificate: true // Change to true for local dev / self-signed certs
-  }
+    trustServerCertificate: true, // Change to true for local dev / self-signed certs
+  },
 };
 
 let pool: sql.ConnectionPool | null = null;
+let currentDB: string | undefined = process.env.DB_DATABASE;
 
-export const connectDB = async () => {
-  if (pool) {
-    return;
+export const connectDB = async (dbName?: string) => {
+  if (pool && !dbName) {
+    return; // Already connected, and no new DB name provided
   }
+
+  if (pool) {
+    await pool.close();
+    pool = null;
+  }
+
+  currentDB = dbName || process.env.DB_DATABASE;
+
+  const sqlConfig: sql.config = {
+    ...baseConfig,
+    database: currentDB,
+  };
+
   try {
     pool = await new sql.ConnectionPool(sqlConfig).connect();
-    console.log('✅ Database connection successful!');
+    console.log(`✅ Database connection to ${currentDB} successful!`);
   } catch (err) {
-    console.error('❌ Database Connection Failed:', err);
+    console.error(`❌ Database Connection to ${currentDB} Failed:`, err);
     pool = null; // Reset pool on connection failure
-    process.exit(1); // Exit if we can't connect to the DB
+    throw err; // Re-throw error to be handled by caller
   }
 };
 
