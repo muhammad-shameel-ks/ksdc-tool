@@ -4,7 +4,6 @@ import {
   IconDashboard,
   IconFolder,
   IconInnerShadowTop,
-  IconListDetails,
 } from "@tabler/icons-react"
 import {
   Popover,
