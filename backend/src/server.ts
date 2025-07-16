@@ -27,6 +27,31 @@ app.get('/api/test', async (req: Request, res: Response) => {
   }
 });
 
+app.post('/api/switch-db', async (req: Request, res: Response) => {
+  const { dbName } = req.body;
+  if (!dbName) {
+    return res.status(400).json({ error: 'dbName is required' });
+  }
+  try {
+    await connectDB(dbName);
+    res.json({ message: `Successfully switched to database: ${dbName}` });
+  } catch (err) {
+    console.error('Failed to switch database', err);
+    res.status(500).json({ error: 'Failed to switch database' });
+  }
+});
+
+app.get('/api/current-db', async (req: Request, res: Response) => {
+  try {
+    const pool = getPool();
+    const result = await pool.request().query('SELECT DB_NAME() as db_name');
+    res.json({ dbName: result.recordset[0].db_name });
+  } catch (err) {
+    console.error('Failed to get current db', err);
+    res.status(500).json({ error: 'Failed to get current database' });
+  }
+});
+
 app.get('/api/loan-details', async (req: Request, res: Response) => {
   const { searchTerm } = req.query;
 
