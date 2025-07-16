@@ -442,8 +442,8 @@ const SmartPartPaymentGen: React.FC = () => {
   ];
 
   return (
-    <div className="relative">
-      <Card className="w-full max-w-6xl mx-auto p-4">
+    <div className="relative flex justify-center w-full">
+      <Card className="w-full max-w-6xl p-4">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">Smart Part Payment Gen</CardTitle>
           <CardDescription className="text-center">

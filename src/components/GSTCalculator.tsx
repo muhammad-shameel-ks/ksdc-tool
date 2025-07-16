@@ -102,7 +102,7 @@ export function GSTCalculator() {
   }, [exclusiveAmount]);
 
   return (
-    <Card className="w-full max-w-5xl">
+    <Card className="w-full max-w-5xl mx-auto">
       <CardHeader>
         <CardTitle className="text-2xl font-bold text-center">
           GST Calculator

@@ -3,14 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Copy, Check } from "lucide-react";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Copy, Check, Search } from "lucide-react";
 
 interface LoanDetails {
   int_loanappid: number;
@@ -25,6 +22,7 @@ export const LoanAppIdFinder = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
@@ -56,59 +54,74 @@ export const LoanAppIdFinder = () => {
   };
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle>Universal Loan Finder</CardTitle>
-        <CardDescription>Enter a Loan No, App ID, or App. Reg. No. to find loan details.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid w-full items-center gap-4">
+    <Popover open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          onClick={() => setIsDialogOpen(true)}
+          className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700 text-white"
+          size="icon"
+        >
+          <Search className="h-8 w-8" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        side="top"
+        align="end"
+        className="sm:max-w-md bg-white rounded-lg shadow-xl w-96"
+      >
+        <div className="p-4">
+          <h2 className="text-2xl font-bold text-gray-800">Universal Loan Finder</h2>
+          <p className="text-gray-500">Enter a Loan No, App ID, or App. Reg. No. to find loan details.</p>
+        </div>
+        <div className="grid w-full items-center gap-4 py-4 px-4">
           <div className="flex flex-col space-y-1.5">
-            <Label htmlFor="searchTerm">Search Term</Label>
+            <Label htmlFor="searchTerm" className="text-gray-600">Search Term</Label>
             <Input
               id="searchTerm"
               placeholder="Enter search term..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleFindLoanDetails()}
+              className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
         </div>
-      </CardContent>
-      <CardFooter className="flex flex-col items-start">
-        <Button onClick={handleFindLoanDetails} disabled={loading}>
-          {loading ? 'Searching...' : 'Find Loan Details'}
-        </Button>
-        {error && <p className="text-red-500 mt-4">Error: {error}</p>}
-        {loanDetails && (
-          <div className="mt-4 space-y-2 w-full">
-            <h3 className="text-lg font-semibold">Loan Details Found:</h3>
-            <div className="flex items-center justify-between">
-              <span><strong>Applicant Name:</strong> {loanDetails.vchr_applname}</span>
-              <Button variant="ghost" size="icon" onClick={() => copyToClipboard(loanDetails.vchr_applname, 'name')}>
-                {copiedField === 'name' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-              </Button>
+        <div className="flex flex-col items-start sm:justify-start border-t pt-4 p-4">
+          <Button onClick={handleFindLoanDetails} disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white">
+            {loading ? 'Searching...' : 'Find Loan Details'}
+          </Button>
+          {error && <p className="text-red-500 mt-4">Error: {error}</p>}
+          {loanDetails && (
+            <div className="mt-4 space-y-3 w-full bg-gray-50 p-4 rounded-lg border">
+              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-3">Loan Details Found:</h3>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-700"><strong>Applicant Name:</strong> {loanDetails.vchr_applname}</span>
+                <Button variant="ghost" size="icon" onClick={() => copyToClipboard(loanDetails.vchr_applname, 'name')}>
+                  {copiedField === 'name' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-gray-500" />}
+                </Button>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-700"><strong>Loan Application ID:</strong> {loanDetails.int_loanappid}</span>
+                <Button variant="ghost" size="icon" onClick={() => copyToClipboard(String(loanDetails.int_loanappid), 'appid')}>
+                  {copiedField === 'appid' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-gray-500" />}
+                </Button>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-700"><strong>App. Reg. No.:</strong> {loanDetails.vchr_appreceivregno}</span>
+                <Button variant="ghost" size="icon" onClick={() => copyToClipboard(loanDetails.vchr_appreceivregno, 'regno')}>
+                  {copiedField === 'regno' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-gray-500" />}
+                </Button>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-700"><strong>Loan Number:</strong> {loanDetails.int_loanno}</span>
+                <Button variant="ghost" size="icon" onClick={() => copyToClipboard(loanDetails.int_loanno, 'loanno')}>
+                  {copiedField === 'loanno' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-gray-500" />}
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span><strong>Loan Application ID:</strong> {loanDetails.int_loanappid}</span>
-              <Button variant="ghost" size="icon" onClick={() => copyToClipboard(String(loanDetails.int_loanappid), 'appid')}>
-                {copiedField === 'appid' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
-            <div className="flex items-center justify-between">
-              <span><strong>App. Reg. No.:</strong> {loanDetails.vchr_appreceivregno}</span>
-              <Button variant="ghost" size="icon" onClick={() => copyToClipboard(loanDetails.vchr_appreceivregno, 'regno')}>
-                {copiedField === 'regno' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
-            <div className="flex items-center justify-between">
-              <span><strong>Loan Number:</strong> {loanDetails.int_loanno}</span>
-              <Button variant="ghost" size="icon" onClick={() => copyToClipboard(loanDetails.int_loanno, 'loanno')}>
-                {copiedField === 'loanno' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
-        )}
-      </CardFooter>
-    </Card>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 };
