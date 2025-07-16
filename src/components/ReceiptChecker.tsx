@@ -291,7 +291,7 @@ export const ReceiptChecker = () => {
             </Button>
           </div>
           {(overallStatus === 'checking' || result) && (
-            <LiveResultDisplay result={result} loading={loading} />
+            <LiveResultDisplay result={result} loading={loading} loanno={loanno} />
           )}
         </CardContent>
       </Card>
@@ -367,7 +367,7 @@ const StatusBadge = ({ status }: { status: Status }) => {
   );
 };
 
-const LiveResultDisplay = ({ result, loading }: { result: ResultData | null; loading: boolean }) => {
+const LiveResultDisplay = ({ result, loading, loanno }: { result: ResultData | null; loading: boolean; loanno: string }) => {
   if (!result) return null;
 
   const issues = result.queries.filter(q => (q.status === 'warning' || q.status === 'error') && q.result.length > 0);
@@ -391,6 +391,15 @@ const LiveResultDisplay = ({ result, loading }: { result: ResultData | null; loa
               </div>
             )}
           </div>
+          <Button
+            onClick={() => {
+              const url = `http://ksdcsmart.kerala.gov.in/KSDC_IT_Personal_Ledger_View?Office_Code=0101&loan_no=${loanno}&name=`;
+              window.open(url, '_blank');
+            }}
+            disabled={!loanno}
+          >
+            Open Ledger
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
@@ -406,6 +415,7 @@ const LiveResultDisplay = ({ result, loading }: { result: ResultData | null; loa
           )}
         </div>
       </CardContent>
+      <SQLQueryGenerator issues={issues} />
     </Card>
   );
 };
@@ -464,6 +474,54 @@ const Step = ({ title, status, query, result: data, priority }: StepProps) => {
             </AccordionContent>
           </AccordionItem>
         </Accordion>
+      )}
+    </div>
+  );
+};
+
+const SQLQueryGenerator = ({ issues }: { issues: QueryDetail[] }) => {
+  const [generatedQuery, setGeneratedQuery] = useState('');
+
+  const generateQuery = () => {
+    if (issues.length === 0) {
+      setGeneratedQuery("-- No issues found, so no query generated.");
+      return;
+    }
+
+    const highestPriorityIssue = issues.reduce((prev, current) => {
+      const priorities = ["High", "Medium", "Low"];
+      return priorities.indexOf(prev.priority) < priorities.indexOf(current.priority) ? prev : current;
+    });
+
+    let query = '';
+    switch (highestPriorityIssue.title) {
+      case 'Amount Mismatch Check':
+        query = `-- Fix for Amount Mismatch:\nUPDATE tbl_Loantrans SET int_amt = ${highestPriorityIssue.result[0].int_amt} WHERE int_transid = ${highestPriorityIssue.result[0].int_transid};`;
+        break;
+      case 'Date Mismatch Check':
+        query = `-- Fix for Date Mismatch:\nUPDATE tbl_Loantrans SET dt_transaction = '${new Date().toISOString().slice(0, 10)}' WHERE int_transid = ${highestPriorityIssue.result[0].int_transid};`;
+        break;
+      case 'Duplicate Receipt No. Check':
+        query = `-- Fix for Duplicate Receipt No.:\n-- Manual intervention required. Cannot generate a safe query.`;
+        break;
+      default:
+        query = `-- No specific query generated for this issue.`;
+    }
+    setGeneratedQuery(query);
+  };
+
+  return (
+    <div className="p-4">
+      <Button onClick={generateQuery}>Generate SQL Fix</Button>
+      {generatedQuery && (
+        <div className="mt-4">
+          <pre className="bg-gray-100 p-2 rounded-md text-xs overflow-x-auto text-gray-800">
+            <code>{generatedQuery}</code>
+          </pre>
+          <Button onClick={() => navigator.clipboard.writeText(generatedQuery)} className="mt-2">
+            Copy Query
+          </Button>
+        </div>
       )}
     </div>
   );

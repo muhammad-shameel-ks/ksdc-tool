@@ -201,10 +201,10 @@ app.post('/api/check-receipt-step', async (req: Request, res: Response) => {
        message = 'A record with the same loan and receipt number was found, but the date is different.';
       break;
     case 'Duplicate Receipt No. Check':
-      query = `SELECT * FROM tbl_Loantrans WHERE chr_rec_no = @receiptNo AND int_loanno != @loanno`;
-      status = 'error';
-      overallStatus = 'duplicate_receipt_no';
-      message = 'This receipt number is already in use for another loan.';
+      query = `SELECT * FROM tbl_Loantrans WHERE int_loanno = @loanno AND chr_rec_no = @receiptNo AND NOT (int_amt = @receiptAmount AND CAST(dt_transaction AS DATE) = @date)`;
+      status = 'warning';
+      overallStatus = 'double_entry_warning';
+      message = 'This receipt number has been used for this loan with different details, indicating a potential double entry.';
       break;
     case 'Loan Existence Check':
       query = `SELECT * FROM tbl_loanapp WHERE int_loanno = @loanno`;
