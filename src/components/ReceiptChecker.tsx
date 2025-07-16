@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -493,6 +494,15 @@ const SQLQueryGenerator = ({ issues, result, loanno, receiptAmount, date, receip
   const [paymentMode, setPaymentMode] = useState('Cash');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  const handleCopyQuery = () => {
+    navigator.clipboard.writeText(editableQuery).then(() => {
+      toast.success("SQL Query copied to clipboard!");
+    }).catch(err => {
+      toast.error("Could not copy query to clipboard.");
+      console.error("Copy failed", err);
+    });
+  };
+
   const formatDateForSQL = (date: Date | undefined): string => {
     if (!date) return 'NULL';
     const year = date.getFullYear();
@@ -572,7 +582,7 @@ VALUES ('${loanno}', '${formatDateForSQL(date)}', '${receiptNo}', ${receiptAmoun
               className="min-h-[200px] font-mono text-xs"
             />
           </div>
-          <Button onClick={() => navigator.clipboard.writeText(editableQuery)} className="mt-2">
+          <Button onClick={handleCopyQuery} className="mt-2">
             Copy Query
           </Button>
         </DialogContent>
