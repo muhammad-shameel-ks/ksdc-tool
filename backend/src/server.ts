@@ -68,6 +68,7 @@ app.get('/api/loan-details', async (req: Request, res: Response) => {
 
 app.post('/api/check-receipt', async (req: Request, res: Response) => {
   const { loanno, receiptAmount, date, receiptNo } = req.body;
+  const queries: { title: string; query: string; result?: any[], status?: string }[] = [];
 
   if (!loanno || !receiptAmount || !date || !receiptNo) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -75,63 +76,167 @@ app.post('/api/check-receipt', async (req: Request, res: Response) => {
 
   try {
     const pool = getPool();
-    const exactMatchQuery = `
-      SELECT * FROM tbl_Loantrans
-      WHERE int_loanno = @loanno
-      AND chr_rec_no = @receiptNo
-      AND int_amt = @receiptAmount
-      AND CAST(dt_transaction AS DATE) = @date
-    `;
-    const result = await pool.request()
-      .input('loanno', sql.Int, loanno)
-      .input('receiptNo', sql.VarChar, receiptNo)
-      .input('receiptAmount', sql.Decimal(18, 2), receiptAmount)
-      .input('date', sql.Date, date)
-      .query(exactMatchQuery);
+    const request = pool.request(); // Create a single request object
 
-    if (result.recordset.length > 0) {
-      return res.json({
-        status: 'found',
-        query: exactMatchQuery,
-        result: result.recordset,
-        debugInfo: { loanno, receiptNo, receiptAmount, date }
-      });
+    // 1. Check if loan exists
+    const loanExistsQuery = `SELECT int_loanno FROM tbl_loanapp WHERE int_loanno = @loanno`;
+    queries.push({ title: "Checking if loan exists", query: loanExistsQuery });
+    const loanExistsResult = await request.input('loanno', sql.Int, loanno).query(loanExistsQuery);
+    queries[0].result = loanExistsResult.recordset;
+
+    if (loanExistsResult.recordset.length === 0) {
+        queries[0].status = 'error';
+        return res.status(404).json({ status: 'loan_not_found', message: 'This loan number does not exist.', queries });
     }
+    queries[0].status = 'success';
 
-    // If not found, check for other receipts on the same date
-    const dateMatchQuery = `
-      SELECT * FROM tbl_Loantrans
-      WHERE int_loanno = @loanno
-      AND CAST(dt_transaction AS DATE) = @date
+
+    // 2. Check for exact receipt match
+    const exactMatchQuery = `
+        SELECT * FROM tbl_Loantrans
+        WHERE int_loanno = @loanno
+        AND chr_rec_no = @receiptNo
+        AND int_amt = @receiptAmount
+        AND CAST(dt_transaction AS DATE) = @date
     `;
-    const dateMatchResult = await pool.request()
-      .input('loanno', sql.Int, loanno)
-      .input('date', sql.Date, date)
-      .query(dateMatchQuery);
+    queries.push({ title: "Checking for exact receipt match", query: exactMatchQuery });
+    const exactMatchResult = await request
+        .input('receiptNo', sql.VarChar, receiptNo)
+        .input('receiptAmount', sql.Decimal(18, 2), receiptAmount)
+        .input('date', sql.Date, date)
+        .query(exactMatchQuery);
+    queries[1].result = exactMatchResult.recordset;
+    
+    if (exactMatchResult.recordset.length > 0) {
+        queries[1].status = 'success';
+        return res.json({ status: 'receipt_found', message: 'An exact match for this receipt was found.', queries });
+    }
+    queries[1].status = 'warning';
+
+
+    // 3. Check for double entry (same loan, amount, date, but different receipt number)
+    const doubleEntryQuery = `
+        SELECT * FROM tbl_Loantrans
+        WHERE int_loanno = @loanno
+        AND int_amt = @receiptAmount
+        AND CAST(dt_transaction AS DATE) = @date
+        AND chr_rec_no != @receiptNo
+    `;
+    queries.push({ title: "Checking for potential double entry", query: doubleEntryQuery });
+    const doubleEntryResult = await request.query(doubleEntryQuery);
+    queries[2].result = doubleEntryResult.recordset;
+
+    if (doubleEntryResult.recordset.length > 0) {
+        queries[2].status = 'error';
+        return res.json({ status: 'double_entry_warning', message: 'Warning: A transaction with the same amount and date already exists for this loan.', queries });
+    }
+    queries[2].status = 'success';
+
+
+    // 4. Check for duplicate receipt number for the same loan
+    const duplicateReceiptNoQuery = `
+        SELECT * FROM tbl_Loantrans
+        WHERE int_loanno = @loanno AND chr_rec_no = @receiptNo
+    `;
+    queries.push({ title: "Checking for duplicate receipt number", query: duplicateReceiptNoQuery });
+    const duplicateReceiptNoResult = await request.query(duplicateReceiptNoQuery);
+    queries[3].result = duplicateReceiptNoResult.recordset;
+
+    if (duplicateReceiptNoResult.recordset.length > 0) {
+        queries[3].status = 'error';
+        return res.json({ status: 'duplicate_receipt_no', message: 'This receipt number has already been used for this loan.', queries });
+    }
+    queries[3].status = 'success';
+
+
+    // 5. Check for other receipts on the same date
+    const dateMatchQuery = `
+        SELECT * FROM tbl_Loantrans
+        WHERE int_loanno = @loanno AND CAST(dt_transaction AS DATE) = @date
+    `;
+    queries.push({ title: "Checking for other receipts on the same date", query: dateMatchQuery });
+    const dateMatchResult = await request.query(dateMatchQuery);
+    queries[4].result = dateMatchResult.recordset;
 
     if (dateMatchResult.recordset.length > 0) {
-        return res.json({
-            status: 'not_found_warning',
-            query1: exactMatchQuery,
-            result1: [],
-            query2: dateMatchQuery,
-            result2: dateMatchResult.recordset,
-            debugInfo: { loanno, receiptNo, receiptAmount, date }
-        });
+        queries[4].status = 'warning';
+        return res.json({ status: 'date_warning', message: 'No exact match found, but other transactions exist on this date.', queries });
+    }
+    queries[4].status = 'success';
+
+    return res.json({ status: 'not_found', message: 'This receipt does not exist in the database.', queries });
+
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error', message: err.message });
+  }
+});
+
+app.post('/api/check-receipt-step', async (req: Request, res: Response) => {
+  const { loanno, receiptAmount, date, receiptNo, step } = req.body;
+
+  if (!loanno || !receiptAmount || !date || !receiptNo || !step) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  let query = '';
+  let status: 'success' | 'warning' | 'error' = 'success';
+  let message = '';
+  let overallStatus: string | undefined = undefined;
+
+  switch (step) {
+    case 'Exact Match Check':
+      query = `SELECT * FROM tbl_Loantrans WHERE int_loanno = @loanno AND chr_rec_no = @receiptNo AND int_amt = @receiptAmount AND CAST(dt_transaction AS DATE) = @date`;
+      break;
+    case 'Amount Mismatch Check':
+      query = `SELECT * FROM tbl_Loantrans WHERE int_loanno = @loanno AND chr_rec_no = @receiptNo AND CAST(dt_transaction AS DATE) = @date AND int_amt != @receiptAmount`;
+      status = 'warning';
+      overallStatus = 'amount_mismatch_warning';
+      message = 'A record with the same loan, receipt number, and date was found, but the amount is different.';
+      break;
+    case 'Date Mismatch Check':
+      query = `SELECT * FROM tbl_Loantrans WHERE int_loanno = @loanno AND chr_rec_no = @receiptNo AND CAST(dt_transaction AS DATE) != @date`;
+       status = 'warning';
+       overallStatus = 'date_warning';
+       message = 'A record with the same loan and receipt number was found, but the date is different.';
+      break;
+    case 'Duplicate Receipt No. Check':
+      query = `SELECT * FROM tbl_Loantrans WHERE chr_rec_no = @receiptNo AND int_loanno != @loanno`;
+      status = 'error';
+      overallStatus = 'duplicate_receipt_no';
+      message = 'This receipt number is already in use for another loan.';
+      break;
+    case 'Loan Existence Check':
+      query = `SELECT * FROM tbl_loanapp WHERE int_loanno = @loanno`;
+      break;
+    default:
+      return res.status(400).json({ error: 'Invalid step provided' });
+  }
+
+  try {
+    const pool = getPool();
+    const request = pool.request()
+      .input('loanno', sql.Int, loanno)
+      .input('receiptAmount', sql.Decimal(18, 2), receiptAmount)
+      .input('date', sql.Date, date)
+      .input('receiptNo', sql.VarChar, receiptNo);
+    
+    const result = await request.query(query);
+
+    if (result.recordset.length > 0) {
+      // If a record is found, the original status ('warning' or 'error') is correct.
+      // For 'Exact Match Check', it remains 'success'.
+    } else {
+      // If no record is found, it's a success for this step, as no issue was detected.
+      status = 'success';
+      message = ''; // Clear the message as no warning/error was triggered.
+      overallStatus = undefined;
     }
 
-    return res.json({
-        status: 'not_found_clean',
-        query1: exactMatchQuery,
-        result1: [],
-        query2: dateMatchQuery,
-        result2: [],
-        debugInfo: { loanno, receiptNo, receiptAmount, date }
-    });
-
-  } catch (err) {
+    res.json({ status, result: result.recordset, message, overallStatus });
+  } catch (err: any) {
     console.error(err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ status: 'error', result: [], message: err.message });
   }
 });
 
