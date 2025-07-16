@@ -68,7 +68,7 @@ const DeductionCalculator: React.FC = () => {
   };
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle className="text-2xl font-bold text-center">Deduction Quick-Copy</CardTitle>
       </CardHeader>
@@ -76,27 +76,27 @@ const DeductionCalculator: React.FC = () => {
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 space-y-4">
-              <div className="space-y-2">
+              <div className="space-y-2 text-center">
                 <Label htmlFor="loanAppId">Loan Application ID</Label>
                 <Input id="loanAppId" type="number" value={loanAppId} onChange={(e) => setLoanAppId(e.target.value)} />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 text-center">
                 <Label htmlFor="proFee">Processing Fee</Label>
                 <Input id="proFee" type="number" value={proFee} onChange={(e) => setProFee(e.target.value)} />
               </div>
             </div>
             <div className="bg-green-50 p-4 rounded-lg border border-green-200 space-y-4">
-              <div className="space-y-2">
+              <div className="space-y-2 text-center">
                 <Label htmlFor="legalFee">Legal Fee</Label>
                 <Input id="legalFee" type="number" value={legalFee} onChange={(e) => setLegalFee(e.target.value)} />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 text-center">
                 <Label htmlFor="bc">Beneficiary Charges</Label>
                 <Input id="bc" type="number" value={bc} onChange={(e) => setBc(e.target.value)} />
               </div>
             </div>
           </div>
-          <div className="bg-gray-100 p-4 rounded-lg">
+          <div className="bg-gray-100 p-4 rounded-lg text-center">
             <Label htmlFor="total" className="text-lg font-semibold">Total Deduction</Label>
             <Input id="total" type="number" value={total} readOnly className="mt-2 font-bold text-3xl text-center bg-white" />
           </div>
@@ -104,9 +104,9 @@ const DeductionCalculator: React.FC = () => {
             <Button onClick={handleCopy} className="flex-1">{isCopied ? 'Copied!' : 'Copy for Excel'}</Button>
             <Button onClick={resetForm} variant="outline" className="flex-1">Reset</Button>
           </div>
-          <div className="flex flex-col items-center pt-6">
-            <Label className="text-xl font-bold mb-4 block">Row Preview</Label>
-            <div className="border border-slate-200 dark:border-slate-700 rounded-lg inline-block">
+          <div className="flex flex-col pt-6">
+            <Label className="text-xl font-bold mb-4 block text-center">Row Preview</Label>
+            <div className="w-full overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
               <table className="text-sm text-left">
                 <thead className="bg-slate-100 dark:bg-slate-800">
                   <tr>
