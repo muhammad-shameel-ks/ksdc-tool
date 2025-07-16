@@ -57,19 +57,22 @@ const DbStatus = () => {
               }`}
             ></div>
             <span className="text-sm text-muted-foreground">
-              {loading ? "Checking..." : error ? "Error" : "Connected"}
+              {loading
+                ? "Checking..."
+                : error
+                ? "Error"
+                : status.dbName}
             </span>
           </div>
         </PopoverTrigger>
         <PopoverContent className="w-auto">
-          {loading && <p>Loading...</p>}
-          {error && <p>Error: {error}</p>}
-          {!loading && !error && (
-            <div>
-              <p className="font-semibold">Database</p>
-              <p>{status.dbName}</p>
-            </div>
-          )}
+          <p>
+            {loading
+              ? "Checking connection..."
+              : error
+              ? `Error: ${error}`
+              : "Connected"}
+          </p>
         </PopoverContent>
       </Popover>
     </div>
