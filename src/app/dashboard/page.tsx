@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from "react";
-import { AppSidebar } from "@/components/app-sidebar";
-import BusinessCalculators from "@/components/BusinessCalculators";
-import DeductionCalculator from "@/components/DeductionCalculator";
-import SmartPartPaymentGen from "@/components/SmartPartPaymentGen";
-import { ReceiptChecker } from "@/components/ReceiptChecker";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar"
+import BusinessCalculators from "@/components/BusinessCalculators"
+import DeductionCalculator from "@/components/DeductionCalculator"
+import SmartPartPaymentGen from "@/components/SmartPartPaymentGen"
+import { ReceiptChecker } from "@/components/ReceiptChecker"
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 
 const pages: { [key: string]: React.ComponentType } = {
   "/business-calculators": BusinessCalculators,
@@ -23,9 +23,11 @@ export default function DashboardPage() {
     <SidebarProvider>
       <div className="flex min-h-screen bg-background">
         <AppSidebar setPage={setPage} />
-        <main className="flex-1 p-8">
-          {PageComponent && <PageComponent />}
-        </main>
+        <SidebarInset>
+          <div className={`flex-1 ${page === "/receipt-checker" ? "" : "p-8"}`}>
+            {PageComponent && <PageComponent />}
+          </div>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   );

@@ -1,15 +1,22 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Accordion,
   AccordionContent,
@@ -220,19 +227,19 @@ export const ReceiptChecker = () => {
 
   return (
     <div className="h-full flex items-center justify-center">
-      <Card className="w-full max-w-4xl">
-        <CardHeader>
+      <div className="w-full max-w-4xl">
+        <div className="p-6">
           <div className="flex justify-between items-start">
             <div>
-              <CardTitle>Missing Receipt Checker</CardTitle>
-              <CardDescription>
+              <h2 className="text-2xl font-semibold tracking-tight">Missing Receipt Checker</h2>
+              <p className="text-sm text-muted-foreground">
                 Check if a receipt already exists in the database.
-              </CardDescription>
+              </p>
             </div>
             <StatusBadge status={overallStatus} />
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        </div>
+        <div className="p-6 pt-0 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="loanno">Loan Number</Label>
@@ -290,11 +297,13 @@ export const ReceiptChecker = () => {
               Clear
             </Button>
           </div>
+        </div>
+        <div className="p-6 pt-0">
           {(overallStatus === 'checking' || result) && (
-            <LiveResultDisplay result={result} loading={loading} loanno={loanno} />
+            <LiveResultDisplay result={result} loading={loading} loanno={loanno} receiptAmount={receiptAmount} date={date} receiptNo={receiptNo} />
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
@@ -367,21 +376,21 @@ const StatusBadge = ({ status }: { status: Status }) => {
   );
 };
 
-const LiveResultDisplay = ({ result, loading, loanno }: { result: ResultData | null; loading: boolean; loanno: string }) => {
+const LiveResultDisplay = ({ result, loading, loanno, receiptAmount, date, receiptNo }: { result: ResultData | null; loading: boolean; loanno: string, receiptAmount: string, date: Date | undefined, receiptNo: string }) => {
   if (!result) return null;
 
   const issues = result.queries.filter(q => (q.status === 'warning' || q.status === 'error') && q.result.length > 0);
   const lastQuery = result.queries[result.queries.length - 1];
 
   return (
-    <Card className="mt-6 bg-white text-gray-900 font-sans">
-      <CardHeader>
+    <div className="bg-white text-gray-900 font-sans flex flex-col border rounded-lg">
+      <div className="p-6">
         <div className="flex justify-between items-start">
           <div>
-            <CardTitle className="flex items-center text-base">
+            <h3 className="flex items-center text-base font-semibold">
               <StatusBadge status={result.status} />
               <span className="ml-4">{result.message}</span>
-            </CardTitle>
+            </h3>
             {issues.length > 0 && !loading && (
               <div className="mt-2 flex flex-wrap gap-2 items-center">
                 <span className="text-sm font-medium">Potential Issues ({issues.length}):</span>
@@ -401,9 +410,9 @@ const LiveResultDisplay = ({ result, loading, loanno }: { result: ResultData | n
             Open Ledger
           </Button>
         </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-2 text-sm">
+      </div>
+      <div className="p-6 pt-0 flex-grow">
+        <div className="space-y-2 h-full overflow-y-auto pr-2 text-sm">
           {result.queries.map((query, index) => (
             <Step key={index} {...query} />
           ))}
@@ -414,9 +423,9 @@ const LiveResultDisplay = ({ result, loading, loanno }: { result: ResultData | n
             </div>
           )}
         </div>
-      </CardContent>
-      <SQLQueryGenerator issues={issues} />
-    </Card>
+      </div>
+      <SQLQueryGenerator issues={issues} result={result} loanno={loanno} receiptAmount={receiptAmount} date={date} receiptNo={receiptNo} />
+    </div>
   );
 };
 
@@ -479,50 +488,95 @@ const Step = ({ title, status, query, result: data, priority }: StepProps) => {
   );
 };
 
-const SQLQueryGenerator = ({ issues }: { issues: QueryDetail[] }) => {
-  const [generatedQuery, setGeneratedQuery] = useState('');
+const SQLQueryGenerator = ({ issues, result, loanno, receiptAmount, date, receiptNo }: { issues: QueryDetail[], result: ResultData | null, loanno: string, receiptAmount: string, date: Date | undefined, receiptNo: string }) => {
+  const [editableQuery, setEditableQuery] = useState('');
+  const [paymentMode, setPaymentMode] = useState('Cash');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const formatDateForSQL = (date: Date | undefined): string => {
+    if (!date) return 'NULL';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
 
   const generateQuery = () => {
-    if (issues.length === 0) {
-      setGeneratedQuery("-- No issues found, so no query generated.");
-      return;
-    }
-
-    const highestPriorityIssue = issues.reduce((prev, current) => {
-      const priorities = ["High", "Medium", "Low"];
-      return priorities.indexOf(prev.priority) < priorities.indexOf(current.priority) ? prev : current;
-    });
-
     let query = '';
-    switch (highestPriorityIssue.title) {
-      case 'Amount Mismatch Check':
-        query = `-- Fix for Amount Mismatch:\nUPDATE tbl_Loantrans SET int_amt = ${highestPriorityIssue.result[0].int_amt} WHERE int_transid = ${highestPriorityIssue.result[0].int_transid};`;
-        break;
-      case 'Date Mismatch Check':
-        query = `-- Fix for Date Mismatch:\nUPDATE tbl_Loantrans SET dt_transaction = '${new Date().toISOString().slice(0, 10)}' WHERE int_transid = ${highestPriorityIssue.result[0].int_transid};`;
-        break;
-      case 'Duplicate Receipt No. Check':
-        query = `-- Fix for Duplicate Receipt No.:\n-- Manual intervention required. Cannot generate a safe query.`;
-        break;
-      default:
-        query = `-- No specific query generated for this issue.`;
+    if (result?.status === 'not_found') {
+      const mode = receiptNo.toLowerCase().startsWith('b') ? 'Bank' : 'Cash';
+      setPaymentMode(mode);
+      query = `INSERT INTO tbl_Loantrans (int_loanno, dt_transaction, chr_rec_no, int_amt, chr_mod_payment, chr_transtype, int_prin_amt, int_int_amt, chr_remark, vchr_offidC)
+VALUES ('${loanno}', '${formatDateForSQL(date)}', '${receiptNo}', ${receiptAmount}, '${mode}', 'Receipt', 0, 0, 'REPAYMENT', '${loanno.substring(0, 4)}');`;
+    } else if (issues.length > 0) {
+      const highestPriorityIssue = issues.reduce((prev, current) => {
+        const priorities = ["High", "Medium", "Low"];
+        return priorities.indexOf(prev.priority) < priorities.indexOf(current.priority) ? prev : current;
+      });
+      switch (highestPriorityIssue.title) {
+        case 'Amount Mismatch Check':
+          query = `-- Fix for Amount Mismatch:\nUPDATE tbl_Loantrans SET int_amt = ${highestPriorityIssue.result[0].int_amt} WHERE int_transid = ${highestPriorityIssue.result[0].int_transid};`;
+          break;
+        case 'Date Mismatch Check':
+          query = `-- Fix for Date Mismatch:\nUPDATE tbl_Loantrans SET dt_transaction = '${new Date().toISOString().slice(0, 10)}' WHERE int_transid = ${highestPriorityIssue.result[0].int_transid};`;
+          break;
+        case 'Duplicate Receipt No. Check':
+          query = `-- Fix for Duplicate Receipt No.:\n-- Manual intervention required. Cannot generate a safe query.`;
+          break;
+        default:
+          query = `-- No specific query generated for this issue.`;
+      }
+    } else {
+      query = "-- No issues found, so no query generated.";
     }
-    setGeneratedQuery(query);
+    setEditableQuery(query);
+    setIsDialogOpen(true);
   };
+
+  useEffect(() => {
+    if (result?.status === 'not_found') {
+      const newQuery = `INSERT INTO tbl_Loantrans (int_loanno, dt_transaction, chr_rec_no, int_amt, chr_mod_payment, chr_transtype, int_prin_amt, int_int_amt, chr_remark, vchr_offidC)
+VALUES ('${loanno}', '${formatDateForSQL(date)}', '${receiptNo}', ${receiptAmount}, '${paymentMode}', 'Receipt', 0, 0, 'REPAYMENT', '${loanno.substring(0, 4)}');`;
+      setEditableQuery(newQuery);
+    }
+  }, [paymentMode, result, loanno, receiptAmount, date, receiptNo]);
 
   return (
     <div className="p-4">
       <Button onClick={generateQuery}>Generate SQL Fix</Button>
-      {generatedQuery && (
-        <div className="mt-4">
-          <pre className="bg-gray-100 p-2 rounded-md text-xs overflow-x-auto text-gray-800">
-            <code>{generatedQuery}</code>
-          </pre>
-          <Button onClick={() => navigator.clipboard.writeText(generatedQuery)} className="mt-2">
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[625px]">
+          <DialogHeader>
+            <DialogTitle>Generated SQL Query</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {result?.status === 'not_found' && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="payment-mode" className="text-right">
+                  Payment Mode
+                </Label>
+                <Select value={paymentMode} onValueChange={setPaymentMode}>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select payment mode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Cash">Cash</SelectItem>
+                    <SelectItem value="Bank">Bank</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <Textarea
+              value={editableQuery}
+              onChange={(e) => setEditableQuery(e.target.value)}
+              className="min-h-[200px] font-mono text-xs"
+            />
+          </div>
+          <Button onClick={() => navigator.clipboard.writeText(editableQuery)} className="mt-2">
             Copy Query
           </Button>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

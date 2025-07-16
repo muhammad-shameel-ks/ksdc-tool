@@ -113,7 +113,7 @@ const DbStatus = () => {
 
 export function AppSidebar({ setPage, ...props }: React.ComponentProps<typeof Sidebar> & { setPage: (page: string) => void }) {
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar collapsible="icon" variant="inset" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center justify-between">
