@@ -4,6 +4,7 @@ import {
   IconDashboard,
   IconFolder,
   IconInnerShadowTop,
+  IconSearch,
 } from "@tabler/icons-react"
 import {
   Popover,
@@ -39,6 +40,11 @@ const data = {
       title: "Smart Part Payment Gen",
       url: "/smart-part-payment-gen",
       icon: IconFolder,
+    },
+    {
+      title: "Receipt Checker",
+      url: "/receipt-checker",
+      icon: IconSearch,
     },
   ],
 }
