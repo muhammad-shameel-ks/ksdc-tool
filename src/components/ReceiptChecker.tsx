@@ -46,7 +46,8 @@ type Status =
   | "duplicate_receipt_no"
   | "date_warning"
   | "double_entry_warning"
-  | "amount_mismatch_warning";
+  | "amount_mismatch_warning"
+  | "duplicate_receipt_in_office";
 
 interface QueryDetail {
   title: string;
@@ -164,12 +165,13 @@ export const ReceiptChecker = () => {
         { title: "Amount Mismatch Check", query: `SELECT * FROM receipts WHERE loanno = '${loanno}' AND receiptNo = '${receiptNo}' AND date = '${formatDateForAPI(date)}'`, result: [], status: "running", priority: "Medium" },
         { title: "Date Mismatch Check", query: `SELECT * FROM receipts WHERE loanno = '${loanno}' AND receiptNo = '${receiptNo}'`, result: [], status: "running", priority: "Medium" },
         { title: "Duplicate Receipt No. Check", query: `SELECT * FROM receipts WHERE receiptNo = '${receiptNo}'`, result: [], status: "running", priority: "High" },
+        { title: "Duplicate Receipt in Office Check", query: `SELECT * FROM tbl_Loantrans WHERE vchr_offidC = '${loanno.substring(0, 4)}' AND chr_rec_no = '${receiptNo}' AND int_loanno != '${loanno}'`, result: [], status: "running", priority: "High" },
         { title: "Loan Existence Check", query: `SELECT * FROM loans WHERE loanno = '${loanno}'`, result: [], status: "running", priority: "Low" },
       ];
 
       let finalStatus: Status = "not_found";
       let finalMessage = "No issues found. Receipt appears to be new.";
-      const statusHierarchy: Status[] = ["error", "receipt_found", "duplicate_receipt_no", "amount_mismatch_warning", "date_warning", "double_entry_warning", "not_found"];
+      const statusHierarchy: Status[] = ["error", "receipt_found", "duplicate_receipt_no", "duplicate_receipt_in_office", "amount_mismatch_warning", "date_warning", "double_entry_warning", "not_found"];
 
       for (let i = 1; i < allQueries.length; i++) {
         let displayedQueries = allQueries.slice(0, i + 1);
@@ -199,6 +201,7 @@ export const ReceiptChecker = () => {
             receipt_found: "This exact receipt already exists.",
             error: stepResult.message,
             duplicate_receipt_no: stepResult.message,
+            duplicate_receipt_in_office: stepResult.message,
             amount_mismatch_warning: stepResult.message,
             date_warning: stepResult.message,
         };
@@ -336,6 +339,11 @@ const StatusBadge = ({ status }: { status: Status }) => {
       duplicate_receipt_no: {
         icon: Ban,
         label: "Duplicate Receipt No.",
+        color: "bg-red-200 text-red-800",
+      },
+      duplicate_receipt_in_office: {
+        icon: Ban,
+        label: "Duplicate in Office",
         color: "bg-red-200 text-red-800",
       },
       double_entry_warning: {

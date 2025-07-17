@@ -231,6 +231,12 @@ app.post('/api/check-receipt-step', async (req: Request, res: Response) => {
       overallStatus = 'double_entry_warning';
       message = 'This receipt number has been used for this loan with different details, indicating a potential double entry.';
       break;
+   case 'Duplicate Receipt in Office Check':
+       query = `SELECT * FROM tbl_Loantrans WHERE vchr_offidC = SUBSTRING(CAST(@loanno AS VARCHAR), 1, 4) AND chr_rec_no = @receiptNo AND int_loanno != @loanno`;
+       status = 'warning';
+       overallStatus = 'duplicate_receipt_in_office';
+       message = 'This receipt number is used for another loan in the same office.';
+       break;
     case 'Loan Existence Check':
       query = `SELECT * FROM tbl_loanapp WHERE int_loanno = @loanno`;
       break;
