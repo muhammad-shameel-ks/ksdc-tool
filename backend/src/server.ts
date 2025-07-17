@@ -52,6 +52,35 @@ app.get('/api/current-db', async (req: Request, res: Response) => {
   }
 });
 
+app.get('/api/transaction/:loanNo/:transNo', async (req: Request, res: Response) => {
+  const { loanNo, transNo } = req.params;
+
+  if (!loanNo || !transNo) {
+    return res.status(400).json({ error: 'Loan number and transaction number are required' });
+  }
+
+  try {
+    const pool = getPool();
+    const result = await pool.request()
+      .input('loanNo', sql.VarChar, loanNo)
+      .input('transNo', sql.VarChar, transNo)
+      .query(`
+        SELECT *
+        FROM tbl_Acctrans
+        WHERE int_loanno = @loanNo AND vchr_TransNo = @transNo
+      `);
+
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+
+    res.json(result.recordset);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 app.get('/api/loan-details', async (req: Request, res: Response) => {
   const { searchTerm } = req.query;
 

@@ -2,6 +2,7 @@ import * as React from "react"
 import {
   IconChartBar,
   IconDashboard,
+  IconFileX,
   IconFolder,
   IconInnerShadowTop,
   IconSearch,
@@ -45,6 +46,11 @@ const data = {
       title: "Receipt Checker",
       url: "/receipt-checker",
       icon: IconSearch,
+    },
+    {
+      title: "Transaction Canceller",
+      url: "/transaction-canceller",
+      icon: IconFileX,
     },
   ],
 }
