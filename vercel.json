@@ -11,10 +11,7 @@
     },
     {
       "src": "backend/src/server.ts",
-      "use": "@vercel/node",
-      "env": {
-        "DB_PORT": "55572"
-      }
+      "use": "@vercel/node"
     }
   ],
   "rewrites": [
