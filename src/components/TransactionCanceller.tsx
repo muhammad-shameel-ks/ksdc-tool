@@ -44,7 +44,9 @@ const TransactionCanceller: React.FC = () => {
       const response = await fetch(`/api/transaction/${loanNo}/${transNo}`);
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.error || `Failed to fetch transaction. Status: ${response.status}`);
+        throw new Error(
+          err.error || `Failed to fetch transaction. Status: ${response.status}`
+        );
       }
       const data = await response.json();
       setFetchedData(data);
@@ -57,7 +59,7 @@ const TransactionCanceller: React.FC = () => {
 
   useEffect(() => {
     if (fetchedData.length > 0) {
-      const transformedData = fetchedData.map(row => ({
+      const transformedData = fetchedData.map((row) => ({
         ...row,
         chr_Acc_Name: "CANCELLED",
         int_Rec: 0,
@@ -75,7 +77,9 @@ const TransactionCanceller: React.FC = () => {
   };
 
   const handleCopyAll = () => {
-    const tsvData = previewData.map((row) => Object.values(row).join("\t")).join("\n");
+    const tsvData = previewData
+      .map((row) => Object.values(row).join("\t"))
+      .join("\n");
     navigator.clipboard.writeText(tsvData).then(() => {
       setShowCopyPopup(true);
       setTimeout(() => setShowCopyPopup(false), 2000);
@@ -96,19 +100,23 @@ const TransactionCanceller: React.FC = () => {
       return;
     }
 
-    const insertStatements = previewData.map(row => {
-      const columns = Object.keys(row).join(", ");
-      const values = Object.values(row).map(val => {
-        if (typeof val === 'string') {
-          return `'${val.replace(/'/g, "''")}'`;
-        }
-        if (val === null || val === undefined) {
-          return 'NULL';
-        }
-        return val;
-      }).join(", ");
-      return `INSERT INTO tbl_Acctrans (${columns}) VALUES (${values});`;
-    }).join("\n");
+    const insertStatements = previewData
+      .map((row) => {
+        const columns = Object.keys(row).join(", ");
+        const values = Object.values(row)
+          .map((val) => {
+            if (typeof val === "string") {
+              return `'${val.replace(/'/g, "''")}'`;
+            }
+            if (val === null || val === undefined) {
+              return "NULL";
+            }
+            return val;
+          })
+          .join(", ");
+        return `INSERT INTO tbl_Acctrans (${columns}) VALUES (${values});`;
+      })
+      .join("\n");
 
     const selectStatement = `SELECT * FROM tbl_Acctrans WHERE int_loanno = '${loanNo}' AND vchr_TransNo = '${transNo}';`;
 
@@ -118,19 +126,36 @@ const TransactionCanceller: React.FC = () => {
   };
 
   const headers = [
-    "vchr_TransNo", "chr_Trans_Type", "int_Code", "chr_Acc_Name", "chr_Type",
-    "int_Rec", "int_Pay", "dt_TDate", "int_loanno", "chr_Name", "vchr_remarks",
-    "vchr_offid", "vchr_uname", "dte_time", "vchr_offidC", "Remarks",
-    "GST_percent", "GST_Amount",
+    "vchr_TransNo",
+    "chr_Trans_Type",
+    "int_Code",
+    "chr_Acc_Name",
+    "chr_Type",
+    "int_Rec",
+    "int_Pay",
+    "dt_TDate",
+    "int_loanno",
+    "chr_Name",
+    "vchr_remarks",
+    "vchr_offid",
+    "vchr_uname",
+    "dte_time",
+    "vchr_offidC",
+    "Remarks",
+    "GST_percent",
+    "GST_Amount",
   ];
 
   return (
     <div className="relative flex justify-center w-full">
       <Card className="w-full max-w-4xl p-4">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">Transaction Canceller</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">
+            Transaction Canceller
+          </CardTitle>
           <CardDescription className="text-center">
-            Enter a Loan Number and Transaction Number to fetch and cancel a transaction.
+            Enter a Loan Number and Transaction Number to fetch and cancel a
+            transaction.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
@@ -138,11 +163,21 @@ const TransactionCanceller: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
               <div className="space-y-2">
                 <Label htmlFor="loanNo">Loan Number</Label>
-                <Input id="loanNo" value={loanNo} onChange={(e) => setLoanNo(e.target.value)} placeholder="e.g., 140102037" />
+                <Input
+                  id="loanNo"
+                  value={loanNo}
+                  onChange={(e) => setLoanNo(e.target.value)}
+                  placeholder="e.g., 140102037"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="transNo">Transaction Number</Label>
-                <Input id="transNo" value={transNo} onChange={(e) => setTransNo(e.target.value)} placeholder="e.g., 332" />
+                <Input
+                  id="transNo"
+                  value={transNo}
+                  onChange={(e) => setTransNo(e.target.value)}
+                  placeholder="e.g., 332"
+                />
               </div>
               <Button onClick={handleFetchTransaction} disabled={isFetching}>
                 {isFetching ? "Fetching..." : "Fetch Transaction"}
@@ -158,16 +193,39 @@ const TransactionCanceller: React.FC = () => {
               <table className="min-w-full text-sm text-left">
                 <thead className="bg-slate-100 dark:bg-slate-800">
                   <tr>
-                    {headers.map((header) => (<th key={header} className="p-2 font-semibold text-slate-700 dark:text-slate-200">{header}</th>))}
-                    <th className="p-2 font-semibold text-slate-700 dark:text-slate-200">Copy</th>
+                    {headers.map((header) => (
+                      <th
+                        key={header}
+                        className="p-2 font-semibold text-slate-700 dark:text-slate-200"
+                      >
+                        {header}
+                      </th>
+                    ))}
+                    <th className="p-2 font-semibold text-slate-700 dark:text-slate-200">
+                      Copy
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {previewData.map((row, rowIndex) => (
-                    <tr key={rowIndex} className="border-t border-slate-200 dark:border-slate-700">
-                      {headers.map((header) => (<td key={header} className="p-2 text-gray-800 font-bold">{row[header]}</td>))}
+                    <tr
+                      key={rowIndex}
+                      className="border-t border-slate-200 dark:border-slate-700"
+                    >
+                      {headers.map((header) => (
+                        <td
+                          key={header}
+                          className="p-2 text-gray-800 font-bold"
+                        >
+                          {row[header]}
+                        </td>
+                      ))}
                       <td className="p-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleCopy(row)}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopy(row)}
+                        >
                           <ClipboardCopy className="h-4 w-4" />
                         </Button>
                       </td>
@@ -178,9 +236,23 @@ const TransactionCanceller: React.FC = () => {
             </div>
             <div className="mt-4">
               <div className="flex gap-4">
-                <Button onClick={handleCopyAll} className="flex-1">Copy All</Button>
-                <Button onClick={handleGenerateSql} className="flex-1" variant="secondary">Generate SQL</Button>
-                <Button onClick={resetForm} variant="outline" className="flex-1">Reset</Button>
+                <Button onClick={handleCopyAll} className="flex-1">
+                  Copy All
+                </Button>
+                <Button
+                  onClick={handleGenerateSql}
+                  className="flex-1"
+                  variant="secondary"
+                >
+                  Generate SQL
+                </Button>
+                <Button
+                  onClick={resetForm}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Reset
+                </Button>
               </div>
             </div>
           </div>
@@ -198,10 +270,13 @@ const TransactionCanceller: React.FC = () => {
               className="min-h-[200px] font-mono text-xs"
             />
           </div>
-          <Button onClick={() => {
-            navigator.clipboard.writeText(generatedSql);
-            toast.success("SQL Query copied to clipboard!");
-          }} className="mt-2">
+          <Button
+            onClick={() => {
+              navigator.clipboard.writeText(generatedSql);
+              toast.success("SQL Query copied to clipboard!");
+            }}
+            className="mt-2"
+          >
             Copy Query
           </Button>
         </DialogContent>

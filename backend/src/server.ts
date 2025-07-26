@@ -44,6 +44,9 @@ app.post('/api/switch-db', async (req: Request, res: Response) => {
 app.get('/api/current-db', async (req: Request, res: Response) => {
   try {
     const pool = getPool();
+    if (!pool.connected) {
+      await connectDB();
+    }
     const result = await pool.request().query('SELECT DB_NAME() as db_name');
     res.json({ dbName: result.recordset[0].db_name });
   } catch (err) {

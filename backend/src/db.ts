@@ -1,5 +1,5 @@
-import sql from 'mssql';
-import dotenv from 'dotenv';
+import sql from "mssql";
+import dotenv from "dotenv";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -8,13 +8,14 @@ const baseConfig = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   server: process.env.DB_SERVER!,
+  port: Number(process.env.DB_PORT),
   pool: {
     max: 10,
     min: 0,
     idleTimeoutMillis: 30000,
   },
   options: {
-    encrypt: process.env.NODE_ENV === 'production', // Use this if you're on Azure SQL
+    encrypt: process.env.NODE_ENV === "production", // Use this if you're on Azure SQL
     trustServerCertificate: true, // Change to true for local dev / self-signed certs
   },
 };
@@ -51,7 +52,9 @@ export const connectDB = async (dbName?: string) => {
 
 export const getPool = (): sql.ConnectionPool => {
   if (!pool) {
-    throw new Error('Database not connected. Call connectDB() during server initialization.');
+    throw new Error(
+      "Database not connected. Call connectDB() during server initialization."
+    );
   }
   return pool;
 };
