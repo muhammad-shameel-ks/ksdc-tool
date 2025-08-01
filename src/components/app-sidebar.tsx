@@ -12,6 +12,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { apiFetch } from "@/lib/utils";
 
 import { NavMain } from "@/components/nav-main"
 import {
@@ -72,7 +73,7 @@ const DbStatus = () => {
   const fetchStatus = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/current-db");
+      const response = await apiFetch("/api/current-db");
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -94,11 +95,8 @@ const DbStatus = () => {
     try {
       setIsSwitching(true);
       setError(null);
-      const response = await fetch("/api/switch-db", {
+      const response = await apiFetch("/api/switch-db", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({ dbName: selectedDb }),
       });
       if (!response.ok) {

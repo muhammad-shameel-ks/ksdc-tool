@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { apiFetch } from "@/lib/utils";
 
 const BankGenerator: React.FC = () => {
   const [loanAppId, setLoanAppId] = useState("");
@@ -23,7 +24,7 @@ const BankGenerator: React.FC = () => {
       }
 
       try {
-        const response = await fetch(`/api/bank-details/${loanAppId}`);
+        const response = await apiFetch(`/api/bank-details/${loanAppId}`);
         const data = await response.json();
         if (data.exists) {
           setVerificationStatus({

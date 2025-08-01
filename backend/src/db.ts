@@ -1,17 +1,21 @@
 import sql from "mssql";
 import dotenv from "dotenv";
+import path from "path";
 
-// Load environment variables from .env file
-dotenv.config();
+// Load environment variables from the correct path
+dotenv.config({ path: path.resolve(__dirname, ".env") });
 
-console.log("--- DATABASE CONNECTION DEBUG ---");
-console.log("DB_USER:", process.env.DB_USER);
-console.log("DB_SERVER:", process.env.DB_SERVER);
-console.log("DB_PORT:", process.env.DB_PORT);
-console.log("DB_DATABASE:", process.env.DB_DATABASE);
-console.log("DB_PASSWORD exists:", !!process.env.DB_PASSWORD);
-console.log("NODE_ENV:", process.env.NODE_ENV);
-console.log("--- END DATABASE CONNECTION DEBUG ---");
+// In development, log connection details for debugging purposes.
+if (process.env.NODE_ENV !== 'production') {
+  console.log('--- DATABASE CONNECTION DEBUG ---');
+  console.log('DB_USER:', process.env.DB_USER);
+  console.log('DB_SERVER:', process.env.DB_SERVER);
+  console.log('DB_PORT:', process.env.DB_PORT);
+  console.log('DB_DATABASE:', process.env.DB_DATABASE);
+  console.log('DB_PASSWORD exists:', !!process.env.DB_PASSWORD);
+  console.log('NODE_ENV:', process.env.NODE_ENV);
+  console.log('--- END DATABASE CONNECTION DEBUG ---');
+}
 const baseConfig = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,

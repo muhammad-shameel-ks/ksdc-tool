@@ -35,6 +35,7 @@ import {
   Ban,
 } from "lucide-react";
 import { parse, isValid } from "date-fns";
+import { apiFetch } from "@/lib/utils";
 
 type Status =
   | "idle"
@@ -259,9 +260,8 @@ export const ReceiptChecker = () => {
         });
         await new Promise((res) => setTimeout(res, 400 + Math.random() * 300));
 
-        const response = await fetch("/api/check-receipt-step", {
+        const response = await apiFetch("/api/check-receipt-step", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...apiPayload, step: allQueries[i].title }),
         });
         const stepResult = await response.json();

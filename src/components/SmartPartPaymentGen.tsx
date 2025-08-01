@@ -13,6 +13,7 @@ import { ClipboardCopy } from "lucide-react";
 import { parse, isValid } from "date-fns";
 import * as XLSX from "xlsx";
 import { headerMappings } from "@/lib/headerMappings";
+import { apiFetch } from "@/lib/utils";
 
 const SmartPartPaymentGen: React.FC = () => {
   // Merged state from SmartPartPayment
@@ -57,10 +58,23 @@ const SmartPartPaymentGen: React.FC = () => {
 
   // Merged helper functions from SmartPartPayment
   const officeIdMap: { [key: string]: string } = {
-    TVM: "0101", KMR: "0102", KLM: "0201", PTM: "0301", ALP: "0401",
-    KTM: "0501", IDK: "0601", EKM: "0701", TSR: "0801", PKD: "0901",
-    MPM: "1001", VDR: "1002", KKD: "1101", WYD: "1201", KNR: "1301",
-    KSR: "1401", CKA: "0802",
+    TVM: "0101",
+    KMR: "0102",
+    KLM: "0201",
+    PTM: "0301",
+    ALP: "0401",
+    KTM: "0501",
+    IDK: "0601",
+    EKM: "0701",
+    TSR: "0801",
+    PKD: "0901",
+    MPM: "1001",
+    VDR: "1002",
+    KKD: "1101",
+    WYD: "1201",
+    KNR: "1301",
+    KSR: "1401",
+    CKA: "0802",
   };
 
   const getOfficeId = (loanNo: string): string => {
@@ -103,7 +117,9 @@ const SmartPartPaymentGen: React.FC = () => {
       );
 
       if (mainHeaderRowIndex === -1) {
-        setError("Invalid Excel format: Could not find header row with 'SL NO'.");
+        setError(
+          "Invalid Excel format: Could not find header row with 'SL NO'."
+        );
         return;
       }
 
@@ -111,13 +127,14 @@ const SmartPartPaymentGen: React.FC = () => {
       const feeHeaderRowIndex = potentialFeeHeaderRows.findIndex((row) =>
         row.some(
           (cell) =>
-            typeof cell === "string" &&
-            normalize(cell).includes("LEGAL FEE")
+            typeof cell === "string" && normalize(cell).includes("LEGAL FEE")
         )
       );
 
       if (feeHeaderRowIndex === -1) {
-        setError("Invalid Excel format: Could not find fee header row with 'LEGAL FEE'.");
+        setError(
+          "Invalid Excel format: Could not find fee header row with 'LEGAL FEE'."
+        );
         return;
       }
 
@@ -153,11 +170,26 @@ const SmartPartPaymentGen: React.FC = () => {
 
       const correctDate = (d: any, label: string): Date | any => {
         if (!(d instanceof Date)) {
-          debugLog.push({ label, input: d, inputType: typeof d, output: d, note: "Not a Date object, returned as-is" });
+          debugLog.push({
+            label,
+            input: d,
+            inputType: typeof d,
+            output: d,
+            note: "Not a Date object, returned as-is",
+          });
           return d;
         }
-        const corrected = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
-        debugLog.push({ label, originalDate: new Date(d).toString(), correctedDate: corrected.toString(), note: "Added 1 day to compensate for timezone shift" });
+        const corrected = new Date(
+          d.getFullYear(),
+          d.getMonth(),
+          d.getDate() + 1
+        );
+        debugLog.push({
+          label,
+          originalDate: new Date(d).toString(),
+          correctedDate: corrected.toString(),
+          note: "Added 1 day to compensate for timezone shift",
+        });
         return corrected;
       };
 
@@ -165,7 +197,9 @@ const SmartPartPaymentGen: React.FC = () => {
 
       const parseFee = (fee: any): number | any => {
         if (typeof fee === "string" && fee.includes("+")) {
-          return fee.split("+").reduce((acc, val) => acc + Number(val.trim()), 0);
+          return fee
+            .split("+")
+            .reduce((acc, val) => acc + Number(val.trim()), 0);
         }
         return fee;
       };
@@ -179,9 +213,11 @@ const SmartPartPaymentGen: React.FC = () => {
             name: row[getHeaderIndex(headerMappings.name)],
             scheme: row[getHeaderIndex(headerMappings.scheme)],
             loanNo: String(loanNoRaw),
-            agreementNumber: row[getHeaderIndex(headerMappings.agreementNumber)],
+            agreementNumber:
+              row[getHeaderIndex(headerMappings.agreementNumber)],
             requiredAmount: row[getHeaderIndex(headerMappings.requiredAmount)],
-            amountSanctioned: row[getHeaderIndex(headerMappings.amountSanctioned)],
+            amountSanctioned:
+              row[getHeaderIndex(headerMappings.amountSanctioned)],
             installments: [
               row[getHeaderIndex(headerMappings.installment1)],
               row[getHeaderIndex(headerMappings.installment2)],
@@ -204,10 +240,17 @@ const SmartPartPaymentGen: React.FC = () => {
               receiptNo: row[bcIndex + 2],
             },
             bankDetails: {
-              accountNo: row[getHeaderIndex(headerMappings.bankAccountNo, bankStartIndex)],
-              ifsc: row[getHeaderIndex(headerMappings.bankIfsc, bankStartIndex)],
-              bankName: row[getHeaderIndex(headerMappings.bankName, bankStartIndex)],
-              branch: row[getHeaderIndex(headerMappings.bankBranch, bankStartIndex)],
+              accountNo:
+                row[
+                  getHeaderIndex(headerMappings.bankAccountNo, bankStartIndex)
+                ],
+              ifsc: row[
+                getHeaderIndex(headerMappings.bankIfsc, bankStartIndex)
+              ],
+              bankName:
+                row[getHeaderIndex(headerMappings.bankName, bankStartIndex)],
+              branch:
+                row[getHeaderIndex(headerMappings.bankBranch, bankStartIndex)],
             },
           };
         })
@@ -219,7 +262,9 @@ const SmartPartPaymentGen: React.FC = () => {
       setUrlError("");
     } catch (err) {
       console.error(err);
-      setError("Error parsing the Excel file. Make sure it follows the template.");
+      setError(
+        "Error parsing the Excel file. Make sure it follows the template."
+      );
     }
   };
 
@@ -259,9 +304,11 @@ const SmartPartPaymentGen: React.FC = () => {
     setError("");
 
     try {
-      const response = await fetch(exportUrl);
+      const response = await apiFetch(exportUrl);
       if (!response.ok) {
-        throw new Error(`Failed to fetch spreadsheet. Status: ${response.status}`);
+        throw new Error(
+          `Failed to fetch spreadsheet. Status: ${response.status}`
+        );
       }
       const arrayBuffer = await response.arrayBuffer();
       setFileName(googleSheetUrl); // Use URL as filename
@@ -279,7 +326,7 @@ const SmartPartPaymentGen: React.FC = () => {
     if (data.length > 0) {
       const currentRecord = data[currentIndex];
       const officeId = getOfficeId(currentRecord.loanNo);
-      
+
       setLoanNo(currentRecord.loanNo);
       setName(currentRecord.name);
       setOfficeId(officeId);
@@ -287,7 +334,11 @@ const SmartPartPaymentGen: React.FC = () => {
       const newRows = [...rows];
       const formatDate = (date: any) => {
         if (date instanceof Date) {
-          return `${date.getDate().toString().padStart(2, "0")}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date.getFullYear()}`;
+          return `${date.getDate().toString().padStart(2, "0")}-${(
+            date.getMonth() + 1
+          )
+            .toString()
+            .padStart(2, "0")}-${date.getFullYear()}`;
         }
         return date;
       };
@@ -351,8 +402,14 @@ const SmartPartPaymentGen: React.FC = () => {
       return null;
     }
     const formats = [
-      "MM-dd-yyyy", "dd-MM-yyyy", "dd/MM/yyyy", "dd.MM.yyyy",
-      "yyyy-MM-dd", "MM/dd/yyyy", "dd-MM-yy", "dd/MM/yy",
+      "MM-dd-yyyy",
+      "dd-MM-yyyy",
+      "dd/MM/yyyy",
+      "dd.MM.yyyy",
+      "yyyy-MM-dd",
+      "MM/dd/yyyy",
+      "dd-MM-yy",
+      "dd/MM/yy",
     ];
     for (const formatStr of formats) {
       const parsed = parse(dateText, formatStr, new Date());
@@ -360,15 +417,40 @@ const SmartPartPaymentGen: React.FC = () => {
     }
     try {
       const nativeDate = new Date(dateText);
-      if (isValid(nativeDate) && nativeDate.getFullYear() > 1900) return nativeDate;
+      if (isValid(nativeDate) && nativeDate.getFullYear() > 1900)
+        return nativeDate;
     } catch (e) {}
     return null;
   };
 
   const hardcodedData = [
-    { chr_Trans_Type: "Receipt", int_Code: 1039, chr_Acc_Name: "LEGAL FEE", chr_Type: "Cash", vchr_remarks: "LEGAL FEE", vchr_uname: "6", GST_percent: 0 },
-    { chr_Trans_Type: "Receipt", int_Code: 1041, chr_Acc_Name: "PROCESSING FEE", chr_Type: "Cash", vchr_remarks: "PROCESSING FEE", vchr_uname: "6", GST_percent: 18 },
-    { chr_Trans_Type: "Receipt", int_Code: 24103, chr_Acc_Name: "Beneficiary Contribution", chr_Type: "Cash", vchr_remarks: "Beneficiary Contribution", vchr_uname: "6", GST_percent: 0 },
+    {
+      chr_Trans_Type: "Receipt",
+      int_Code: 1039,
+      chr_Acc_Name: "LEGAL FEE",
+      chr_Type: "Cash",
+      vchr_remarks: "LEGAL FEE",
+      vchr_uname: "6",
+      GST_percent: 0,
+    },
+    {
+      chr_Trans_Type: "Receipt",
+      int_Code: 1041,
+      chr_Acc_Name: "PROCESSING FEE",
+      chr_Type: "Cash",
+      vchr_remarks: "PROCESSING FEE",
+      vchr_uname: "6",
+      GST_percent: 18,
+    },
+    {
+      chr_Trans_Type: "Receipt",
+      int_Code: 24103,
+      chr_Acc_Name: "Beneficiary Contribution",
+      chr_Type: "Cash",
+      vchr_remarks: "Beneficiary Contribution",
+      vchr_uname: "6",
+      GST_percent: 0,
+    },
   ];
 
   useEffect(() => {
@@ -381,7 +463,10 @@ const SmartPartPaymentGen: React.FC = () => {
       }
       const date = row.transactionDate;
       const formattedDate = date
-        ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")} 00:00:00.000`
+        ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+            2,
+            "0"
+          )}-${String(date.getDate()).padStart(2, "0")} 00:00:00.000`
         : "1900-01-01 00:00:00.000";
       return {
         vchr_TransNo: row.vchr_TransNo,
@@ -416,7 +501,9 @@ const SmartPartPaymentGen: React.FC = () => {
   };
 
   const handleCopyAll = () => {
-    const tsvData = previewData.map((row) => Object.values(row).join("\t")).join("\n");
+    const tsvData = previewData
+      .map((row) => Object.values(row).join("\t"))
+      .join("\n");
     navigator.clipboard.writeText(tsvData).then(() => {
       setShowCopyPopup(true);
       setTimeout(() => setShowCopyPopup(false), 2000);
@@ -428,32 +515,69 @@ const SmartPartPaymentGen: React.FC = () => {
     setName("");
     setOfficeId("");
     setRows([
-      { vchr_TransNo: "", int_Rec: "", transactionDate: null, transactionDateText: "", dateError: "" },
-      { vchr_TransNo: "", int_Rec: "", transactionDate: null, transactionDateText: "", dateError: "" },
-      { vchr_TransNo: "", int_Rec: "", transactionDate: null, transactionDateText: "", dateError: "" },
+      {
+        vchr_TransNo: "",
+        int_Rec: "",
+        transactionDate: null,
+        transactionDateText: "",
+        dateError: "",
+      },
+      {
+        vchr_TransNo: "",
+        int_Rec: "",
+        transactionDate: null,
+        transactionDateText: "",
+        dateError: "",
+      },
+      {
+        vchr_TransNo: "",
+        int_Rec: "",
+        transactionDate: null,
+        transactionDateText: "",
+        dateError: "",
+      },
     ]);
   };
 
   const headers = [
-    "vchr_TransNo", "chr_Trans_Type", "int_Code", "chr_Acc_Name", "chr_Type",
-    "int_Rec", "int_Pay", "dt_TDate", "int_loanno", "chr_Name", "vchr_remarks",
-    "vchr_offid", "vchr_uname", "dte_time", "vchr_offidC", "Remarks",
-    "GST_percent", "GST_Amount",
+    "vchr_TransNo",
+    "chr_Trans_Type",
+    "int_Code",
+    "chr_Acc_Name",
+    "chr_Type",
+    "int_Rec",
+    "int_Pay",
+    "dt_TDate",
+    "int_loanno",
+    "chr_Name",
+    "vchr_remarks",
+    "vchr_offid",
+    "vchr_uname",
+    "dte_time",
+    "vchr_offidC",
+    "Remarks",
+    "GST_percent",
+    "GST_Amount",
   ];
 
   return (
     <div className="relative flex justify-center w-full">
       <Card className="w-full max-w-6xl p-4">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">Smart Part Payment Gen</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">
+            Smart Part Payment Gen
+          </CardTitle>
           <CardDescription className="text-center">
-            Upload an Excel file or enter details manually to generate transaction rows.
+            Upload an Excel file or enter details manually to generate
+            transaction rows.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
           {/* Google Sheet URL Input Section */}
           <div className="space-y-2">
-            <Label htmlFor="google-sheet-url">Or Fetch from Google Sheets URL</Label>
+            <Label htmlFor="google-sheet-url">
+              Or Fetch from Google Sheets URL
+            </Label>
             <div className="flex items-center gap-2">
               <Input
                 id="google-sheet-url"
@@ -468,7 +592,9 @@ const SmartPartPaymentGen: React.FC = () => {
               </Button>
             </div>
             {urlError && <p className="text-sm text-red-600">{urlError}</p>}
-            <p className="text-xs text-gray-500 mt-1">Note: Your Google Sheet must be public for the fetch to work.</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Note: Your Google Sheet must be public for the fetch to work.
+            </p>
           </div>
 
           <div className="relative flex py-5 items-center">
@@ -479,19 +605,46 @@ const SmartPartPaymentGen: React.FC = () => {
 
           {/* File Upload Section */}
           <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg">
-            <Input id="file-upload" type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="hidden" />
-            <Label htmlFor="file-upload" className="flex flex-col items-center justify-center w-full h-full cursor-pointer">
+            <Input
+              id="file-upload"
+              type="file"
+              accept=".xlsx, .xls"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            <Label
+              htmlFor="file-upload"
+              className="flex flex-col items-center justify-center w-full h-full cursor-pointer"
+            >
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <svg className="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                <svg
+                  className="w-10 h-10 mb-3 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                  ></path>
                 </svg>
                 <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                  <span className="font-semibold">Click to upload</span> or drag and drop
+                  <span className="font-semibold">Click to upload</span> or drag
+                  and drop
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">XLSX or XLS files</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  XLSX or XLS files
+                </p>
               </div>
             </Label>
-            {fileName && <p className="text-sm text-gray-600 mt-2">Selected file: {fileName}</p>}
+            {fileName && (
+              <p className="text-sm text-gray-600 mt-2">
+                Selected file: {fileName}
+              </p>
+            )}
           </div>
 
           {error && <p className="text-red-500 text-center">{error}</p>}
@@ -499,58 +652,137 @@ const SmartPartPaymentGen: React.FC = () => {
           {data.length > 0 && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <Button onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))} disabled={currentIndex === 0}>
+                <Button
+                  onClick={() =>
+                    setCurrentIndex((prev) => Math.max(0, prev - 1))
+                  }
+                  disabled={currentIndex === 0}
+                >
                   Previous
                 </Button>
-                <p className="font-medium">Record {currentIndex + 1} of {data.length}</p>
-                <Button onClick={() => setCurrentIndex((prev) => Math.min(data.length - 1, prev + 1))} disabled={currentIndex === data.length - 1}>
+                <p className="font-medium">
+                  Record {currentIndex + 1} of {data.length}
+                </p>
+                <Button
+                  onClick={() =>
+                    setCurrentIndex((prev) =>
+                      Math.min(data.length - 1, prev + 1)
+                    )
+                  }
+                  disabled={currentIndex === data.length - 1}
+                >
                   Next
                 </Button>
               </div>
               {!isValidLoanNoFormat(data[currentIndex].loanNo) && (
-                <div className="p-3 mb-4 text-sm text-yellow-800 rounded-lg bg-yellow-50" role="alert">
-                  <span className="font-medium">Warning!</span> The loan number "{data[currentIndex].loanNo}" might be incorrect.
+                <div
+                  className="p-3 mb-4 text-sm text-yellow-800 rounded-lg bg-yellow-50"
+                  role="alert"
+                >
+                  <span className="font-medium">Warning!</span> The loan number
+                  "{data[currentIndex].loanNo}" might be incorrect.
                 </div>
               )}
             </div>
           )}
 
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 space-y-4">
-            <h3 className="font-medium text-blue-800 mb-2">Common Information</h3>
+            <h3 className="font-medium text-blue-800 mb-2">
+              Common Information
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="loanNo">Loan Number</Label>
-                <Input id="loanNo" value={loanNo} onChange={(e) => setLoanNo(e.target.value)} />
+                <Input
+                  id="loanNo"
+                  value={loanNo}
+                  onChange={(e) => setLoanNo(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="officeId">Office ID</Label>
-                <Input id="officeId" value={officeId} onChange={(e) => setOfficeId(e.target.value)} />
+                <Input
+                  id="officeId"
+                  value={officeId}
+                  onChange={(e) => setOfficeId(e.target.value)}
+                />
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {rows.map((row, index) => (
-              <div key={index} className={`p-4 rounded-lg border space-y-4 ${index === 0 ? "bg-green-50 border-green-200" : index === 1 ? "bg-orange-50 border-orange-200" : "bg-purple-50 border-purple-200"}`}>
-                <h3 className={`font-medium mb-2 ${index === 0 ? "text-green-800" : index === 1 ? "text-orange-800" : "text-purple-800"}`}>
+              <div
+                key={index}
+                className={`p-4 rounded-lg border space-y-4 ${
+                  index === 0
+                    ? "bg-green-50 border-green-200"
+                    : index === 1
+                    ? "bg-orange-50 border-orange-200"
+                    : "bg-purple-50 border-purple-200"
+                }`}
+              >
+                <h3
+                  className={`font-medium mb-2 ${
+                    index === 0
+                      ? "text-green-800"
+                      : index === 1
+                      ? "text-orange-800"
+                      : "text-purple-800"
+                  }`}
+                >
                   Transaction {index + 1}: {hardcodedData[index].chr_Acc_Name}
                 </h3>
                 <div className="space-y-2">
                   <Label htmlFor={`transNo-${index}`}>Transaction No.</Label>
-                  <Input id={`transNo-${index}`} value={row.vchr_TransNo} onChange={(e) => handleRowChange(index, "vchr_TransNo", e.target.value)} />
+                  <Input
+                    id={`transNo-${index}`}
+                    value={row.vchr_TransNo}
+                    onChange={(e) =>
+                      handleRowChange(index, "vchr_TransNo", e.target.value)
+                    }
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor={`amount-${index}`}>Received Amount</Label>
-                  <Input id={`amount-${index}`} type="number" value={row.int_Rec} onChange={(e) => handleRowChange(index, "int_Rec", e.target.value)} />
+                  <Input
+                    id={`amount-${index}`}
+                    type="number"
+                    value={row.int_Rec}
+                    onChange={(e) =>
+                      handleRowChange(index, "int_Rec", e.target.value)
+                    }
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor={`transactionDate-${index}`}>Transaction Date</Label>
-                  <Input id={`transactionDate-${index}`} type="text" placeholder="e.g., 10-21-2025" value={row.transactionDateText} onChange={(e) => handleRowChange(index, "transactionDateText", e.target.value)} className={row.dateError ? "border-red-500" : ""} />
-                  {row.dateError && <p className="text-sm text-red-600">{row.dateError}</p>}
+                  <Label htmlFor={`transactionDate-${index}`}>
+                    Transaction Date
+                  </Label>
+                  <Input
+                    id={`transactionDate-${index}`}
+                    type="text"
+                    placeholder="e.g., 10-21-2025"
+                    value={row.transactionDateText}
+                    onChange={(e) =>
+                      handleRowChange(
+                        index,
+                        "transactionDateText",
+                        e.target.value
+                      )
+                    }
+                    className={row.dateError ? "border-red-500" : ""}
+                  />
+                  {row.dateError && (
+                    <p className="text-sm text-red-600">{row.dateError}</p>
+                  )}
                 </div>
               </div>
             ))}
@@ -562,16 +794,39 @@ const SmartPartPaymentGen: React.FC = () => {
               <table className="min-w-full text-sm text-left">
                 <thead className="bg-slate-100 dark:bg-slate-800">
                   <tr>
-                    {headers.map((header) => (<th key={header} className="p-2 font-semibold text-slate-700 dark:text-slate-200">{header}</th>))}
-                    <th className="p-2 font-semibold text-slate-700 dark:text-slate-200">Copy</th>
+                    {headers.map((header) => (
+                      <th
+                        key={header}
+                        className="p-2 font-semibold text-slate-700 dark:text-slate-200"
+                      >
+                        {header}
+                      </th>
+                    ))}
+                    <th className="p-2 font-semibold text-slate-700 dark:text-slate-200">
+                      Copy
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {previewData.map((row, rowIndex) => (
-                    <tr key={rowIndex} className="border-t border-slate-200 dark:border-slate-700">
-                      {headers.map((header) => (<td key={header} className="p-2 text-gray-800 font-bold">{row[header]}</td>))}
+                    <tr
+                      key={rowIndex}
+                      className="border-t border-slate-200 dark:border-slate-700"
+                    >
+                      {headers.map((header) => (
+                        <td
+                          key={header}
+                          className="p-2 text-gray-800 font-bold"
+                        >
+                          {row[header]}
+                        </td>
+                      ))}
                       <td className="p-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleCopy(row)}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopy(row)}
+                        >
                           <ClipboardCopy className="h-4 w-4" />
                         </Button>
                       </td>
@@ -582,8 +837,16 @@ const SmartPartPaymentGen: React.FC = () => {
             </div>
             <div className="mt-4">
               <div className="flex gap-4">
-                <Button onClick={handleCopyAll} className="flex-1">Copy All</Button>
-                <Button onClick={resetForm} variant="outline" className="flex-1">Reset</Button>
+                <Button onClick={handleCopyAll} className="flex-1">
+                  Copy All
+                </Button>
+                <Button
+                  onClick={resetForm}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Reset
+                </Button>
               </div>
             </div>
           </div>
@@ -595,7 +858,10 @@ const SmartPartPaymentGen: React.FC = () => {
         </div>
       )}
       {showWarningToast && (
-        <div className="fixed top-5 right-5 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg shadow-lg transition-opacity duration-300" role="alert">
+        <div
+          className="fixed top-5 right-5 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg shadow-lg transition-opacity duration-300"
+          role="alert"
+        >
           <p className="font-bold">Warning</p>
           <p>Always double or triple-check data before copying.</p>
         </div>

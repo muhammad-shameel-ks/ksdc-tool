@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { apiFetch } from "@/lib/utils";
 
 const TransactionCanceller: React.FC = () => {
   const [loanNo, setLoanNo] = useState("");
@@ -41,7 +42,7 @@ const TransactionCanceller: React.FC = () => {
     setPreviewData([]);
 
     try {
-      const response = await fetch(`/api/transaction/${loanNo}/${transNo}`);
+      const response = await apiFetch(`/api/transaction/${loanNo}/${transNo}`);
       if (!response.ok) {
         const err = await response.json();
         throw new Error(

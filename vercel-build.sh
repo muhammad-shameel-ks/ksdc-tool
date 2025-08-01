@@ -3,5 +3,5 @@
 # Build the frontend
 npm run build
 
-# Move vercel.json to the dist directory
-mv vercel.json dist/
+# The vercel.json file is read from the root, so it doesn't need to be moved.
+# mv vercel.json dist/

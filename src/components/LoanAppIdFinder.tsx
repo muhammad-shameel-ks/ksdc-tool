@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { apiFetch } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,7 +40,7 @@ export const LoanAppIdFinder = () => {
     setError(null);
     setLoanDetails(null);
     try {
-      const response = await fetch(`/api/loan-details?searchTerm=${searchTerm}`);
+      const response = await apiFetch(`/api/loan-details?searchTerm=${searchTerm}`);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
