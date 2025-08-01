@@ -303,6 +303,34 @@ app.post('/api/check-receipt-step', async (req: Request, res: Response) => {
   }
 });
 
+app.get('/api/bank-details/:loanAppId', async (req: Request, res: Response) => {
+  const { loanAppId } = req.params;
+
+  if (!loanAppId) {
+    return res.status(400).json({ error: 'Loan Application ID is required' });
+  }
+
+  try {
+    const pool = getPool();
+    const result = await pool.request()
+      .input('loanAppId', sql.Numeric, loanAppId)
+      .query(`
+        SELECT *
+        FROM tbl_BankDetails
+        WHERE int_loanappid = @loanAppId
+      `);
+
+    if (result.recordset.length > 0) {
+      return res.json({ exists: true, details: result.recordset });
+    } else {
+      return res.json({ exists: false });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 const startServer = async () => {
   await connectDB();
   app.listen(port, () => {

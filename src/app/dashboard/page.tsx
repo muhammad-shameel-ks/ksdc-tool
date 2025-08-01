@@ -7,6 +7,7 @@ import DeductionCalculator from "@/components/DeductionCalculator"
 import SmartPartPaymentGen from "@/components/SmartPartPaymentGen"
 import { ReceiptChecker } from "@/components/ReceiptChecker"
 import TransactionCanceller from "@/components/TransactionCanceller";
+import BankGenerator from "@/components/BankGenerator";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 
 const pages: { [key: string]: React.ComponentType } = {
@@ -15,6 +16,7 @@ const pages: { [key: string]: React.ComponentType } = {
   "/smart-part-payment-gen": SmartPartPaymentGen,
   "/receipt-checker": ReceiptChecker,
   "/transaction-canceller": TransactionCanceller,
+  "/bank-generator": BankGenerator,
 };
 
 export default function DashboardPage() {

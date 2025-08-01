@@ -52,6 +52,11 @@ const data = {
       url: "/transaction-canceller",
       icon: IconFileX,
     },
+    {
+      title: "Bank Generator",
+      url: "/bank-generator",
+      icon: IconInnerShadowTop,
+    },
   ],
 }
 
