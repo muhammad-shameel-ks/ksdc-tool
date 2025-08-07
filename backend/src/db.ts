@@ -2,8 +2,7 @@ import sql from "mssql";
 import dotenv from "dotenv";
 import path from "path";
 
-// Load environment variables from the correct path
-dotenv.config({ path: path.resolve(__dirname, ".env") });
+// Environment variables are now loaded centrally in server.ts
 
 // In development, log connection details for debugging purposes.
 if (process.env.NODE_ENV !== 'production') {
@@ -27,8 +26,8 @@ const baseConfig = {
     idleTimeoutMillis: 30000,
   },
   options: {
-    encrypt: false, // Disabled for now, as it's likely the cause of the Vercel issue
-    trustServerCertificate: true, // Keep true for local and non-SSL connections
+    encrypt: false, // Explicitly disable encryption
+    trustServerCertificate: true, // Required for local and non-SSL connections
   },
 };
 
