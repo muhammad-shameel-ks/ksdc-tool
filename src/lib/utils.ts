@@ -41,10 +41,21 @@ export async function apiFetch(
     "x-api-key": apiKey,
   };
 
+  const isProduction = import.meta.env.PROD;
+  const baseURL = isProduction
+    ? "https://ksdc-tools-backend.vercel.app"
+    : "http://localhost:3001";
+
+  const fullURL = `${baseURL}${url}`;
+
+  console.log(`[apiFetch] Requesting URL: ${fullURL}`);
+  console.log(`[apiFetch] Production Mode: ${isProduction}`);
+  console.log(`[apiFetch] Using API Key: ${apiKey}`);
+
   const fetchOptions: RequestInit = {
     ...options,
     headers,
   };
 
-  return fetch(url, fetchOptions);
+  return fetch(fullURL, fetchOptions);
 }
