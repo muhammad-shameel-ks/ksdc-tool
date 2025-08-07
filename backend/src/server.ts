@@ -25,20 +25,14 @@ const SECURE_API_KEY = API_KEY || "default-insecure-api-key-change-me";
 
 const apiKeyAuth = (req: Request, res: Response, next: Function) => {
   const providedApiKey = req.headers["x-api-key"];
-  console.log(`[Auth] Request to ${req.path}`);
-  console.log(`[Auth] Provided API Key: ${providedApiKey}`);
-  console.log(`[Auth] Expected API Key: ${SECURE_API_KEY}`);
-
   if (req.path === "/api/test") {
     return next();
   }
   if (!providedApiKey || providedApiKey !== SECURE_API_KEY) {
-    console.error(`[Auth] Unauthorized access to ${req.path}. Invalid or missing API Key.`);
     return res
       .status(401)
       .json({ error: "Unauthorized: Invalid or missing API Key" });
   }
-  console.log(`[Auth] Access granted to ${req.path}`);
   next();
 };
 
@@ -53,7 +47,6 @@ if (ALLOWED_DATABASES.length === 0) {
   );
 }
 
-// Middleware
 // Middleware
 app.use(cors()); // Enable CORS for all routes
 app.use(express.json()); // Middleware to parse JSON bodies
@@ -374,10 +367,8 @@ app.post("/api/check-receipt", async (req: Request, res: Response) => {
 
 app.post("/api/check-receipt-step", async (req: Request, res: Response) => {
   const { loanno, receiptAmount, date, receiptNo, step } = req.body;
-  console.log(`[${step}] Received request with payload:`, req.body);
 
   if (!loanno || !receiptAmount || !date || !receiptNo || !step) {
-    console.error(`[${step}] Missing required fields.`);
     return res.status(400).json({ error: "Missing required fields" });
   }
 
@@ -429,7 +420,7 @@ app.post("/api/check-receipt-step", async (req: Request, res: Response) => {
     const pool = getPool();
     const request = pool
       .request()
-      .input("loanno", sql.VarChar, loanno)
+      .input("loanno", sql.Int, loanno)
       .input("receiptAmount", sql.Decimal(18, 2), receiptAmount)
       .input("date", sql.Date, date)
       .input("receiptNo", sql.VarChar, receiptNo);
@@ -448,7 +439,7 @@ app.post("/api/check-receipt-step", async (req: Request, res: Response) => {
 
     res.json({ status, result: result.recordset, message, overallStatus });
   } catch (err: any) {
-    console.error(`[${step}] Error executing query:`, err);
+    console.error(err);
     const errorMessage =
       process.env.NODE_ENV === "production"
         ? "An unexpected error occurred."
