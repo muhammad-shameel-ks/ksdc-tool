@@ -27,8 +27,8 @@ const baseConfig = {
     idleTimeoutMillis: 30000,
   },
   options: {
-    encrypt: process.env.NODE_ENV === "production", // Use this if you're on Azure SQL
-    trustServerCertificate: true, // Change to true for local dev / self-signed certs
+    encrypt: false, // Disabled for now, as it's likely the cause of the Vercel issue
+    trustServerCertificate: true, // Keep true for local and non-SSL connections
   },
 };
 
