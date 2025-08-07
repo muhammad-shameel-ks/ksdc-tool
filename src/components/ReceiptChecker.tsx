@@ -102,12 +102,22 @@ export const ReceiptChecker = () => {
     ];
     for (const formatStr of formats) {
       const parsed = parse(dateText, formatStr, new Date());
-      if (isValid(parsed)) return parsed;
+      if (isValid(parsed)) {
+        // If the year is parsed as 2-digits, correct it to a 4-digit year.
+        if (parsed.getFullYear() < 100) {
+          parsed.setFullYear(parsed.getFullYear() + 2000);
+        }
+        return parsed;
+      }
     }
     try {
       const nativeDate = new Date(dateText);
-      if (isValid(nativeDate) && nativeDate.getFullYear() > 1900)
+      if (isValid(nativeDate) && nativeDate.getFullYear() > 1900) {
+        if (nativeDate.getFullYear() < 100) {
+          nativeDate.setFullYear(nativeDate.getFullYear() + 2000);
+        }
         return nativeDate;
+      }
     } catch (e) {}
     return null;
   };
