@@ -27,7 +27,7 @@ const baseConfig = {
   },
   options: {
     encrypt: false, // Explicitly disable encryption
-    trustServerCertificate: true, // Required for local and non-SSL connections
+    trustServerCertificate: false, // Required for local and non-SSL connections
   },
 };
 
