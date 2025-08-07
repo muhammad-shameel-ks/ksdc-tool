@@ -30,7 +30,10 @@ export async function apiFetch(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const apiKey = import.meta.env.VITE_API_KEY || "test-api-key-12345";
+  const apiKey =
+    (import.meta.env.VITE_API_KEY as string) ||
+    (process.env.VITE_API_KEY as string) ||
+    "test-api-key-12345";
 
   const headers = {
     ...options.headers,

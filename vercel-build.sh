@@ -1,7 +1,11 @@
 #!/bin/bash
 
+# Create a .env file for the backend
+echo "Creating backend .env file..."
+echo "VITE_API_KEY=${VITE_API_KEY}" > backend/.env
+
 # Build the frontend
+echo "Building the frontend..."
 npm run build
 
-# The vercel.json file is read from the root, so it doesn't need to be moved.
-# mv vercel.json dist/
+echo "Build script finished."
