@@ -195,15 +195,12 @@ export const ReceiptChecker = () => {
         receiptNo,
       };
 
-      const allQueries: QueryDetail[] = [
-        ...initialQueries,
+      const queryDefinitions: Omit<QueryDetail, "result" | "status">[] = [
         {
           title: "Exact Match Check",
           query: `SELECT * FROM tbl_loanTrans WHERE int_loanno = '${loanno}' AND chr_rec_no = '${receiptNo}' AND dt_transaction = '${formatDateForAPI(
             date
           )}' AND int_amt = ${receiptAmount}`,
-          result: [],
-          status: "running",
           priority: "High",
         },
         {
@@ -211,22 +208,16 @@ export const ReceiptChecker = () => {
           query: `SELECT * FROM tbl_loanTrans WHERE int_loanno = '${loanno}' AND chr_rec_no = '${receiptNo}' AND dt_transaction = '${formatDateForAPI(
             date
           )}'`,
-          result: [],
-          status: "running",
           priority: "Medium",
         },
         {
           title: "Date Mismatch Check",
           query: `SELECT * FROM tbl_loanTrans WHERE int_loanno = '${loanno}' AND chr_rec_no = '${receiptNo}'`,
-          result: [],
-          status: "running",
           priority: "Medium",
         },
         {
           title: "Duplicate Receipt No. Check",
           query: `SELECT * FROM tbl_loanTrans WHERE chr_rec_no = '${receiptNo}'`,
-          result: [],
-          status: "running",
           priority: "High",
         },
         {
@@ -235,21 +226,40 @@ export const ReceiptChecker = () => {
             0,
             4
           )}' AND chr_rec_no = '${receiptNo}' AND int_loanno != '${loanno}'`,
-          result: [],
-          status: "running",
           priority: "High",
         },
         {
           title: "Loan Existence Check",
           query: `SELECT * FROM loans WHERE loanno = '${loanno}'`,
-          result: [],
-          status: "running",
           priority: "Low",
         },
       ];
 
+      // Update UI to show all checks are running
+      setResult(prev => ({
+        ...prev!,
+        queries: [
+          ...prev!.queries,
+          ...queryDefinitions.map(q => ({...q, result: [], status: 'running' as const}))
+        ]
+      }));
+
+      const queryPromises = queryDefinitions.map((qDef) =>
+        apiFetch("/api/check-receipt-step", {
+          method: "POST",
+          body: JSON.stringify({ ...apiPayload, step: qDef.title }),
+        })
+          .then((res) => res.json())
+          .then((data) => ({ apiStatus: "success" as const, value: data, queryDef: qDef }))
+          .catch((error) => ({ apiStatus: "error" as const, reason: error, queryDef: qDef }))
+      );
+
+      const allApiResults = await Promise.all(queryPromises);
+
+      const processedQueries: QueryDetail[] = [initialQueries[0]];
       let finalStatus: Status = "not_found";
       let finalMessage = "No issues found. Receipt appears to be new.";
+
       const statusHierarchy: Status[] = [
         "error",
         "receipt_found",
@@ -259,73 +269,81 @@ export const ReceiptChecker = () => {
         "date_warning",
         "double_entry_warning",
         "not_found",
+        "loan_not_found"
       ];
 
-      for (let i = 1; i < allQueries.length; i++) {
-        let displayedQueries = allQueries.slice(0, i + 1);
-        setResult({
-          status: "checking",
-          message: `Running: ${allQueries[i].title}`,
-          queries: displayedQueries,
-        });
-        await new Promise((res) => setTimeout(res, 400 + Math.random() * 300));
+      const statusMessages: Partial<Record<Status, string>> = {
+        receipt_found: "This exact receipt already exists.",
+        duplicate_receipt_no: "Duplicate receipt number found.",
+        duplicate_receipt_in_office: "Duplicate receipt number found in office.",
+        amount_mismatch_warning: "Amount mismatch detected.",
+        date_warning: "Date warning: receipt date is unusual.",
+        loan_not_found: "Loan number does not exist."
+      };
 
-        const response = await apiFetch("/api/check-receipt-step", {
-          method: "POST",
-          body: JSON.stringify({ ...apiPayload, step: allQueries[i].title }),
-        });
-        const stepResult = await response.json();
-
-        allQueries[i].status = stepResult.status;
-        allQueries[i].result = stepResult.result;
-
-        let currentStepStatus: Status | null = null;
-        if (stepResult.status === "error" && stepResult.result.length > 0) {
-          currentStepStatus = stepResult.overallStatus || "error";
-        } else if (
-          allQueries[i].title === "Exact Match Check" &&
-          stepResult.status === "success" &&
-          stepResult.result.length > 0
-        ) {
-          currentStepStatus = "receipt_found";
-        } else if (
-          stepResult.status === "warning" &&
-          stepResult.result.length > 0
-        ) {
-          currentStepStatus = stepResult.overallStatus || "not_found";
-        }
-
-        const statusMessages: Partial<Record<Status, string>> = {
-          receipt_found: "This exact receipt already exists.",
-          error: stepResult.message,
-          duplicate_receipt_no: stepResult.message,
-          duplicate_receipt_in_office: stepResult.message,
-          amount_mismatch_warning: stepResult.message,
-          date_warning: stepResult.message,
+      allApiResults.forEach((apiResult) => {
+        const qDef = apiResult.queryDef;
+        let currentQueryDetail: QueryDetail = {
+          ...qDef,
+          result: [],
+          status: "running", // Will be updated below
         };
 
-        if (currentStepStatus) {
-          if (
-            statusHierarchy.indexOf(currentStepStatus) <
-            statusHierarchy.indexOf(finalStatus)
+        if (apiResult.apiStatus === "success") {
+          const stepResult = apiResult.value;
+          currentQueryDetail.status = stepResult.status;
+          currentQueryDetail.result = stepResult.result;
+
+          let currentStepOverallStatus: Status | null = null;
+
+          if (stepResult.status === "error" && stepResult.result.length > 0) {
+            currentStepOverallStatus = stepResult.overallStatus || "error";
+          } else if (
+            qDef.title === "Exact Match Check" &&
+            stepResult.status === "success" &&
+            stepResult.result.length > 0
           ) {
-            finalStatus = currentStepStatus;
-            finalMessage = statusMessages[currentStepStatus] || finalMessage;
+            currentStepOverallStatus = "receipt_found";
+          } else if (
+            stepResult.status === "warning" &&
+            stepResult.result.length > 0
+          ) {
+            currentStepOverallStatus = stepResult.overallStatus || "not_found";
+          } else if (
+            qDef.title === "Loan Existence Check" &&
+            stepResult.status === "success" &&
+            stepResult.result.length === 0
+          ) {
+            currentStepOverallStatus = "loan_not_found";
+            currentQueryDetail.status = "error";
+            currentQueryDetail.result = [{ message: "Loan number not found" }];
+          }
+
+          if (currentStepOverallStatus) {
+            if (
+              statusHierarchy.indexOf(currentStepOverallStatus) <
+              statusHierarchy.indexOf(finalStatus)
+            ) {
+              finalStatus = currentStepOverallStatus;
+              finalMessage = statusMessages[currentStepOverallStatus] || stepResult.message || finalMessage;
+            }
+          }
+        } else { // apiResult.apiStatus === "error"
+          const errorReason = apiResult.reason as Error;
+          currentQueryDetail.status = "error";
+          currentQueryDetail.result = [{ error: errorReason.message || "Unknown error" }];
+          if (statusHierarchy.indexOf("error") < statusHierarchy.indexOf(finalStatus)) {
+            finalStatus = "error";
+            finalMessage = `An error occurred during check: ${errorReason.message || "Unknown error"}`;
           }
         }
-
-        setResult({
-          status: "checking",
-          message: `Completed: ${allQueries[i].title}`,
-          queries: [...allQueries],
-        });
-        await new Promise((res) => setTimeout(res, 150));
-      }
+        processedQueries.push(currentQueryDetail);
+      });
 
       setResult({
         status: finalStatus,
         message: finalMessage,
-        queries: allQueries,
+        queries: processedQueries,
       });
       setOverallStatus(finalStatus);
     } catch (e: any) {
