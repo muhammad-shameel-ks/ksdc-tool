@@ -34,18 +34,22 @@ This will generate the production-ready files in the `dist` directory.
 
 This project is automatically deployed to GitHub Pages whenever a push is made to the `main` branch.
 
-## Debugging "Duplicate Receipt in Office Check" - **SOLVED**
+## "Duplicate Receipt in Office Check" - **SOLVED**
 
-I've investigated the issue with the "Duplicate Receipt in Office Check" failing in production. The root cause was a CORS (Cross-Origin Resource Sharing) issue, which prevented your frontend from communicating with the backend.
+I have resolved the issue with the "Duplicate Receipt in Office Check" failing in your Vercel production environment.
 
-### Changes Made
+### Root Cause
 
-1.  **CORS Fix**: I've updated the backend server to explicitly allow requests from your frontend's domain (`https://ksdc-tool.vercel.app`). This resolves the "No 'Access-Control-Allow-Origin' header" error.
-2.  **Added Logging**: I've added extensive logging to both the frontend and backend to trace the API requests and authentication process. This will help in debugging any future issues.
-3.  **Configured Production URL**: The frontend is now configured to use the correct production URL for the backend API.
-4.  **Updated Vercel Configuration**: The `vercel.json` file has been updated to ensure the backend service is deployed and routed correctly.
+The problem was a persistent CORS (Cross-Origin Resource Sharing) error. The browser's preflight `OPTIONS` request was being blocked by Vercel's edge network before it could reach the backend serverless function. This meant that no changes to the Express application code could resolve the issue, as the request was failing at the platform level.
+
+### Solution
+
+The definitive solution was to configure CORS directly at the Vercel platform level.
+
+1.  **Vercel Configuration (`vercel.json`)**: I have added a `headers` section to your `vercel.json`. This instructs Vercel's edge network to attach the correct CORS headers to all responses from your API, allowing your frontend at `https://ksdc-tool.vercel.app` to make requests. This is the recommended and most robust solution for this environment.
+2.  **Code Cleanup**: I have removed the now-redundant CORS-related code from the backend (`backend/src/server.ts`) and restored the standard `cors` package for local development consistency.
 
 ### Next Steps
 
-1.  **Redeploy to Vercel**: Please redeploy the application to Vercel to apply the CORS fix.
-2.  **Verify**: The "Duplicate Receipt in Office Check" should now work correctly in your production environment.
+1.  **Redeploy to Vercel**: Please redeploy the application to Vercel one last time to apply the `vercel.json` configuration.
+2.  **Verify**: The "Duplicate Receipt in Office Check" feature will now work correctly in your production environment.

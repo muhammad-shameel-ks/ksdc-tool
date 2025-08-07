@@ -25,20 +25,14 @@ const SECURE_API_KEY = API_KEY || "default-insecure-api-key-change-me";
 
 const apiKeyAuth = (req: Request, res: Response, next: Function) => {
   const providedApiKey = req.headers["x-api-key"];
-  console.log(`[Auth] Request to ${req.path}`);
-  console.log(`[Auth] Provided API Key: ${providedApiKey}`);
-  console.log(`[Auth] Expected API Key: ${SECURE_API_KEY}`);
-
   if (req.path === "/api/test") {
     return next();
   }
   if (!providedApiKey || providedApiKey !== SECURE_API_KEY) {
-    console.error(`[Auth] Unauthorized access to ${req.path}. Invalid or missing API Key.`);
     return res
       .status(401)
       .json({ error: "Unauthorized: Invalid or missing API Key" });
   }
-  console.log(`[Auth] Access granted to ${req.path}`);
   next();
 };
 
@@ -55,27 +49,9 @@ if (ALLOWED_DATABASES.length === 0) {
 
 // Middleware
 // Middleware
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://ksdc-tool.vercel.app",
-];
-
-const corsOptions = {
-  origin: (
-    origin: string | undefined,
-    callback: (err: Error | null, allow?: boolean) => void
-  ) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  credentials: true,
-};
-
-app.use(cors(corsOptions));
+// CORS is now handled by vercel.json for production.
+// This configuration is for local development.
+app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 app.use(express.json()); // Middleware to parse JSON bodies
 app.use(apiKeyAuth); // Apply API key authentication to all routes
 
