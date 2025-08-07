@@ -54,7 +54,28 @@ if (ALLOWED_DATABASES.length === 0) {
 }
 
 // Middleware
-app.use(cors()); // Enable CORS for all routes
+// Middleware
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://ksdc-tool.vercel.app",
+];
+
+const corsOptions = {
+  origin: (
+    origin: string | undefined,
+    callback: (err: Error | null, allow?: boolean) => void
+  ) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json()); // Middleware to parse JSON bodies
 app.use(apiKeyAuth); // Apply API key authentication to all routes
 
