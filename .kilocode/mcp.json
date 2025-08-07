@@ -12,7 +12,7 @@
         "MSSQL_HOST": "109.73.161.154\\SQLEXPRESS",
         "MSSQL_USER": "sa",
         "MSSQL_PASSWORD": "zjcuZysKv31@",
-        "MSSQL_DATABASE": "KSDC_SMART_LIVE_STAGING",
+        "MSSQL_DATABASE": "KSDC_SMART_LIVE",
         "MSSQL_DRIVER": "ODBC Driver 18 for SQL Server",
         "MSSQL_READ_ONLY": "true"
       },
@@ -21,11 +21,7 @@
     },
     "git": {
       "command": "uvx",
-      "args": [
-        "mcp-server-git",
-        "--repository",
-        "/home/ksdcit/ksdc_tool"
-      ]
+      "args": ["mcp-server-git", "--repository", "/home/ksdcit/ksdc_tool"]
     }
   }
 }

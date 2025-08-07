@@ -67,12 +67,10 @@ app.get("/api/test", async (req: Request, res: Response) => {
     });
   } catch (err) {
     console.error("[/api/test] Error:", err);
-    res
-      .status(500)
-      .json({
-        error: "Internal Server Error",
-        message: "Failed to connect to the database.",
-      });
+    res.status(500).json({
+      error: "Internal Server Error",
+      message: "Failed to connect to the database.",
+    });
   }
 });
 
@@ -240,13 +238,11 @@ app.post("/api/check-receipt", async (req: Request, res: Response) => {
 
     if (loanExistsResult.recordset.length === 0) {
       queries[0].status = "error";
-      return res
-        .status(404)
-        .json({
-          status: "loan_not_found",
-          message: "This loan number does not exist.",
-          queries,
-        });
+      return res.status(404).json({
+        status: "loan_not_found",
+        message: "This loan number does not exist.",
+        queries,
+      });
     }
     queries[0].status = "success";
 
@@ -424,7 +420,7 @@ app.post("/api/check-receipt-step", async (req: Request, res: Response) => {
     const pool = getPool();
     const request = pool
       .request()
-      .input("loanno", sql.Int, loanno)
+      .input("loanno", sql.VarChar, loanno)
       .input("receiptAmount", sql.Decimal(18, 2), receiptAmount)
       .input("date", sql.Date, date)
       .input("receiptNo", sql.VarChar, receiptNo);
