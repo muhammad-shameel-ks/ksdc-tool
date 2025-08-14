@@ -9,6 +9,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { ClipboardCopy } from "lucide-react";
 import { parse, isValid } from "date-fns";
 import * as XLSX from "xlsx";
@@ -25,6 +26,7 @@ const SmartPartPaymentGen: React.FC = () => {
   const [isFetching, setIsFetching] = useState(false);
   const [urlError, setUrlError] = useState("");
   const [showWarningToast, setShowWarningToast] = useState(false);
+  const [pastedData, setPastedData] = useState("");
 
   // State from TransactionGenerator
   const [loanNo, setLoanNo] = useState("");
@@ -492,6 +494,39 @@ const SmartPartPaymentGen: React.FC = () => {
     setPreviewData(generatedData);
   }, [rows, loanNo, name, officeId]);
 
+  useEffect(() => {
+    if (!pastedData) {
+      return;
+    }
+
+    const lines = pastedData
+      .trim()
+      .split("\n")
+      .filter((line) => line.trim() !== "");
+    const dataLine = lines.length > 0 ? lines[lines.length - 1] : null;
+
+    if (dataLine) {
+      const values = dataLine.split("\t");
+      if (values.length >= 9) {
+        const newRows = [...rows];
+
+        newRows[0].int_Rec = values[0];
+        newRows[0].transactionDateText = values[1];
+        newRows[0].vchr_TransNo = values[2];
+
+        newRows[1].int_Rec = values[3];
+        newRows[1].transactionDateText = values[4];
+        newRows[1].vchr_TransNo = values[5];
+
+        newRows[2].int_Rec = values[6];
+        newRows[2].transactionDateText = values[7];
+        newRows[2].vchr_TransNo = values[8];
+
+        setRows(newRows);
+      }
+    }
+  }, [pastedData]);
+
   const handleCopy = (data: any) => {
     const tsvData = Object.values(data).join("\t");
     navigator.clipboard.writeText(tsvData).then(() => {
@@ -537,6 +572,7 @@ const SmartPartPaymentGen: React.FC = () => {
         dateError: "",
       },
     ]);
+    setPastedData("");
   };
 
   const headers = [
@@ -648,6 +684,17 @@ const SmartPartPaymentGen: React.FC = () => {
           </div>
 
           {error && <p className="text-red-500 text-center">{error}</p>}
+
+          <div className="space-y-2 text-center">
+            <Label htmlFor="pastedData">Paste Excel Data</Label>
+            <Textarea
+              id="pastedData"
+              value={pastedData}
+              onChange={(e) => setPastedData(e.target.value)}
+              placeholder="Paste data from Excel here..."
+              rows={6}
+            />
+          </div>
 
           {data.length > 0 && (
             <div className="space-y-4">
