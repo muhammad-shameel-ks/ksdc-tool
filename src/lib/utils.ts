@@ -33,7 +33,7 @@ export async function apiFetch(
   const apiKey =
     (import.meta.env.VITE_API_KEY as string) ||
     (process.env.VITE_API_KEY as string) ||
-    "test-api-key-12345";
+    ""; // Ensure VITE_API_KEY is properly set in the environment
 
   const headers = {
     ...options.headers,
