@@ -26,3 +26,4 @@ dist-ssr
 
 # Ignore backend environment file
 backend/.env
+
