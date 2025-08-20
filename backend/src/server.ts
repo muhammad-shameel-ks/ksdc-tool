@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 import path from "path";
 
 // Load environment variables from the correct path
-dotenv.config({ path: path.resolve(__dirname, "../.env") });
+dotenv.config({ path: path.resolve(__dirname, ".env") });
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -14,7 +14,7 @@ const port = process.env.PORT || 3001;
 // --- Security Enhancements ---
 
 // 1. API Key Authentication Middleware
-const API_KEY = process.env.VITE_API_KEY; // Should be in .env
+const API_KEY = process.env.API_KEY; // Should be in .env
 
 if (!API_KEY) {
   console.warn(
