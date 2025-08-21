@@ -1,5 +1,5 @@
 import express, { Request, Response } from "express";
-import cors from "cors";
+import cors, { CorsOptions } from "cors";
 import sql from "mssql";
 import { connectDB, getPool } from "./db";
 
@@ -43,16 +43,24 @@ if (ALLOWED_DATABASES.length === 0) {
 }
 
 // Middleware
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // In a Vercel environment, the origin header is trustworthy.
-      // For local development, you might want to whitelist your frontend's local URL.
+const whitelist = [
+  "http://localhost:5173",
+  "https://ksdc-tool.vercel.app",
+];
+
+const corsOptions: CorsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || whitelist.indexOf(origin) !== -1) {
       callback(null, true);
-    },
-    credentials: true,
-  })
-);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200, // For legacy browser support
+};
+
+app.use(cors(corsOptions));
 app.use(express.json()); // Middleware to parse JSON bodies
 app.use(apiKeyAuth); // Apply API key authentication to all routes
 
@@ -525,3 +533,4 @@ app.get("/api/scheme/:loanNo", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
