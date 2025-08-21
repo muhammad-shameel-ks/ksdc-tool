@@ -492,3 +492,32 @@ const startServer = async () => {
 };
 
 startServer();
+
+app.get("/api/scheme/:loanNo", async (req, res) => {
+  const { loanNo } = req.params;
+  try {
+    const pool = await getPool();
+    const currentSchemeResult = await pool
+      .request()
+      .input("loanNo", sql.VarChar, decodeURIComponent(loanNo))
+      .query(
+        "SELECT T1.int_schemeid, T2.Scheme FROM tbl_loanapp T1 JOIN tbl_Schemes T2 ON T1.int_schemeid = T2.Id WHERE T1.vchr_appreceivregno = @loanNo"
+      );
+
+    if (currentSchemeResult.recordset.length === 0) {
+      return res.status(404).json({ error: "Loan not found" });
+    }
+
+    const allSchemesResult = await pool
+      .request()
+      .query("SELECT Id, Scheme FROM tbl_Schemes");
+
+    res.json({
+      currentScheme: currentSchemeResult.recordset[0],
+      allSchemes: allSchemesResult.recordset,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
