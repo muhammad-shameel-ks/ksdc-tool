@@ -2,11 +2,6 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import sql from "mssql";
 import { connectDB, getPool } from "./db";
-import dotenv from "dotenv";
-import path from "path";
-
-// Load environment variables from the correct path
-dotenv.config({ path: path.resolve(__dirname, ".env") });
 
 const app = express();
 const port = process.env.PORT || 3001;
