@@ -41,7 +41,7 @@ export async function apiFetch(
     "x-api-key": apiKey,
   };
 
-  const isProduction = import.meta.env.PROD;
+  const isProduction = import.meta.env.VITE_NODE_ENV === "production";
   const baseURL = isProduction
     ? "https://ksdc-tools-backend.vercel.app"
     : "http://localhost:3001";
