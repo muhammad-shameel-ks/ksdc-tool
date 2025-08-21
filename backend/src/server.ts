@@ -43,7 +43,16 @@ if (ALLOWED_DATABASES.length === 0) {
 }
 
 // Middleware
-app.use(cors()); // Enable CORS for all routes
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // In a Vercel environment, the origin header is trustworthy.
+      // For local development, you might want to whitelist your frontend's local URL.
+      callback(null, true);
+    },
+    credentials: true,
+  })
+);
 app.use(express.json()); // Middleware to parse JSON bodies
 app.use(apiKeyAuth); // Apply API key authentication to all routes
 
