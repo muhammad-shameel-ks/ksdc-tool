@@ -9,6 +9,7 @@ import SchemeChanger from "./components/SchemeChanger";
 import { AppSidebar } from "./components/app-sidebar";
 import { SiteHeader } from "./components/site-header";
 import { SidebarProvider, SidebarInset } from "./components/ui/sidebar";
+import { LoanAppIdFinder } from "./components/LoanAppIdFinder";
 
 function App() {
   const [page, setPage] = useState("business-calculators");
@@ -42,6 +43,7 @@ function App() {
             <main className="flex-1 p-6 overflow-auto">{renderPage()}</main>
           </div>
         </SidebarInset>
+        <LoanAppIdFinder />
       </div>
     </SidebarProvider>
   );
